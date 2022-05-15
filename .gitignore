@@ -1,0 +1,7 @@
+*.pth
+*.json
+*.mp4
+*.txt
+model_artifacts
+.env
+*.mp3
