@@ -39,5 +39,3 @@ def combine_model_data(video_id):
         json.dump(combined_json, f)
 
     return combined_json
-
-combine_model_data(1)
