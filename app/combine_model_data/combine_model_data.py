@@ -19,8 +19,6 @@ def combine_model_data(video_id):
         dict_3 = dict(sorted(dict_3.items()))
         return dict_3
 
-
-
     with open(f'temp_videodata_storage/{video_id}_od.json') as json_file:
         od_json = json.load(json_file)
         od_json = {int(k):v for k,v in od_json.items()}
@@ -35,7 +33,7 @@ def combine_model_data(video_id):
     combined_json['seconds'] = merged_json
     combined_json['videoInfo'] = {'videoLength': int(video_length)}
 
-    with open("test_combined.json", "w") as f:
+    with open(f"temp_videodata_storage/{video_id}_combined.json", "w") as f:
         json.dump(combined_json, f)
+    
 
-    return combined_json

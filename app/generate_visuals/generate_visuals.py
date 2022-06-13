@@ -6,16 +6,34 @@ import datetime as dt
 import plotly
 
 
-def generate_visuals(combined_json, video_id):
-    
-    data = combined_json
+def generate_visuals(video_id):
 
-    def create_df_all_models(data):
+    def format_and_export_plotly_to_json(fig):
 
-        with open(data) as f:
+        export_json_name = f'temp_videodata_storage/{video_id}_plotly.json'
+        plotly.io.write_json(fig, export_json_name, validate=True, pretty=False, remove_uids=True)
+
+        with open(export_json_name) as f:
             data = json.load(f)
         
-        #f = open("demofile.txt", "r")
+        # make edits to final visual json
+        with open(f"temp_videodata_storage/{video_id}_combined.json") as f:
+            combined_data = json.load(f)
+
+        #time_list = df['seconds'].to_list()
+        # ALWAYS append time list to end of data list
+        data['data'].append({'duration': combined_data['videoInfo']['videoLength']})
+        
+        with open(export_json_name, "w") as outfile:
+            json.dump(data, outfile)
+
+
+
+    def create_df_all_models():
+        with open(f"temp_videodata_storage/{video_id}_combined.json") as f:
+            data = json.load(f)
+
+
         # generate variables to be added to the df
         vidlength = data['videoInfo']['videoLength']
         unique_keys = set([_key for key,val in data['seconds'].items() for _key, _val in val.items()])
@@ -33,50 +51,18 @@ def generate_visuals(combined_json, video_id):
 
                 df.at[int(second), _key] = _val
         df['seconds'] = pd.to_datetime(df['seconds'])
-        # reorder columns
-        #df = df[['seconds', 'Officer', 'Civilian', 'Chemical Smoke', 'Riot Shield', 'Baton', '']]
+        # TODO: reorder columns to be in right order
+
         return df
 
 
 
-    df = create_df_all_models(data)
+    df = create_df_all_models()
 
-
-    def format_and_export_plotly_to_json(fig, data):
-
-        file_name_split = data.split('.')[0]
-        export_json_name = f'{file_name_split}_plotly.json'
-        plotly.io.write_json(fig, export_json_name, validate=True, pretty=False, remove_uids=True)
-
-        with open(export_json_name) as f:
-            data = json.load(f)
-
-        time_list = df['seconds'].to_list()
-
-        # ALWAYS append time list to end of data list
-        data['data'].append({'duration': time_list})
-        data
-        for i in data['data']:
-            
-            # if i['x'] exists
-            try:
-                del i['x']
-            except:
-                continue
-        
-        with open(export_json_name, "w") as outfile:
-            json.dump(data, outfile)
-
-
-
-    # fig 2 with histogram
-    #keep track of detection colors
-    bins = 400
-
+    # create fig with histogram
+    bins = 200
+    #TODO: Generate appropriate colors
     #detection_colors = {'Officer': 'blue', 'Civilian': 'blue', 'Baton': 'green', 'Gun':'green', 'Riot Shield': 'green', 'Chemical Smoke': 'red', 'Pepper Spray': 'red'}
-
-    x = df['seconds']
-    y = df['Officer']
 
     fig = make_subplots(
         rows=len(df.columns)-1, 
@@ -84,8 +70,7 @@ def generate_visuals(combined_json, video_id):
         shared_xaxes=True,
         subplot_titles=df.columns[1:],
         vertical_spacing=0,
-        column_widths=[1],
-        
+        column_widths=[1], 
         )
 
     # add the bars into the graph
@@ -97,6 +82,7 @@ def generate_visuals(combined_json, video_id):
             x=df['seconds'],
             y=df[val],
             histfunc='sum',
+            marker=dict(color='blue'),
             #marker=dict(color=detection_colors[val]),
             nbinsx=bins
         ),row=i, col=1),
@@ -107,6 +93,7 @@ def generate_visuals(combined_json, video_id):
             y=df[val] * -1,
             histfunc='sum',
             nbinsx=bins,
+            marker=dict(color='blue')
             #marker=dict(color=detection_colors[val]),
             
         ),row=i, col=1)
@@ -115,7 +102,9 @@ def generate_visuals(combined_json, video_id):
         showlegend=False,
         height = 400,
         width = 1500,
-        barmode='overlay',
+        barmode='relative',
+        bargap=0,
+        bargroupgap=0,
         margin=dict(
         l=150,
         r=10,
@@ -130,17 +119,15 @@ def generate_visuals(combined_json, video_id):
         row=i, col=1, side='left', showticklabels=False, showgrid=False, linewidth=1, linecolor='black', mirror=True,)
 
         if i == 1:
-            fig.update_xaxes(row=i, col=1, side='top',linewidth=1, linecolor='gray', mirror=True,nticks=12)
+            fig.update_xaxes(row=i, col=1, side='top',linewidth=1, linecolor='gray', mirror=True,showticklabels=True, nticks=12)
         else:
             fig.update_xaxes(row=i, col=1, showticklabels=False, linewidth=1, linecolor='gray', mirror=True)
 
     for i in range(0, len(df.columns[1:])):
         fig.layout.annotations[i].update(x=-0.06)
-        fig.layout.annotations[i]['y'] = fig.layout.annotations[i]['y'] - 0.11
+        fig.layout.annotations[i]['y'] = fig.layout.annotations[i]['y'] - 0.08
 
-    fig.show()
-    print(data)
 
-    return {}
 
-generate_visuals("../temp_videodata_storage/test_combined.json", 1)
+    return format_and_export_plotly_to_json(fig)
+
