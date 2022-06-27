@@ -85,5 +85,3 @@ if __name__ == '__main__':
     args = parse_args()
     processvideo(args.mux_url, args.video_id)
 
-
-# we need playhead, and zoom/scale window
