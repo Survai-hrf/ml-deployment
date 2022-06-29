@@ -4,7 +4,6 @@ from collections import deque
 from operator import itemgetter
 
 import os
-from this import d
 import cv2
 import mmcv
 import numpy as np
@@ -147,9 +146,9 @@ def perform_video_ar(video_id):
 
     #ARGUEMENTS
     VIDEO_DIR = f'temp_videodata_storage/'
-    config = 'model_artifacts/ar/swin_base_patch244_window877_kinetics400_22k_custom.py'
-    checkpoint= 'model_artifacts/ar/best_top1_acc_epoch_20.pth'
-    label= 'model_artifacts/ar/label_map_svar_mk1.txt'
+    config = 'src/model_artifacts/ar/swin_base_patch244_window877_kinetics400_22k_custom.py'
+    checkpoint= 'src/model_artifacts/ar/best_top1_acc_epoch_20.pth'
+    label= 'src/model_artifacts/ar/label_map_svar_mk1.txt'
     input_step=1
     device='cuda:0'
     threshold=4.0

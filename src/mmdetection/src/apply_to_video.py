@@ -17,7 +17,7 @@ def perform_video_od(video_id):
 
     def calculate_mode(fps_frame_list, current_second):
 
-        class_list = open("model_artifacts/od/classes.txt","r").readlines()
+        class_list = open("src/model_artifacts/od/classes.txt","r").readlines()
 
         temp_count_storage = {}
 
@@ -82,8 +82,8 @@ def perform_video_od(video_id):
 
 
     video = f'temp_videodata_storage/{video_id}.mp4'
-    config = 'model_artifacts/od/mask_rcnn_swin-s-p4-w7_fpn_fp16_ms-crop-3x_coco.py'
-    checkpoint = 'model_artifacts/od/epoch_42.pth'
+    config = 'src/model_artifacts/od/mask_rcnn_swin-s-p4-w7_fpn_fp16_ms-crop-3x_coco.py'
+    checkpoint = 'src/model_artifacts/od/epoch_42.pth'
     device = 'cuda:0'
     score_thr = 0.5
     gen_overlay = False
