@@ -4,4 +4,4 @@
 model_artifacts
 .env
 *.mp3
-Dockerfile
+Dockerfile*
