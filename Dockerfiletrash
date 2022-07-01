@@ -1,0 +1,46 @@
+FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
+
+ENV BASH_ENV ~/.bashrc
+SHELL ["/bin/bash", "-c"] 
+
+ENV FORCE_CUDA="1"
+ARG PATH="/root/miniconda3/bin:${PATH}"
+
+ENV TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
+ENV TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+ENV CMAKE_PREFIX_PATH="$(dirname $(which conda))/../"
+
+RUN apt-get update --fix-missing && \
+    apt-get install -y wget bzip2 ca-certificates curl git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://seanbackstrom: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@github.com/Survai-hrf/ml-deployment.git /deploy
+
+WORKDIR /deploy
+
+
+
+RUN mkdir -p ~/miniconda3 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh && \
+    bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3 && \
+    rm -rf ~/miniconda3/miniconda.sh && \
+    ~/miniconda3/bin/conda init bash && \
+    ~/miniconda3/bin/conda init zsh && \
+    ~/miniconda3/bin/conda update conda && \
+    ~/miniconda3/bin/conda create -n sdeploy python=3.7 -y >> ~/.bashrc
+
+RUN echo "source activate sdeploy" > ~/.bashrc
+ENV PATH /opt/conda/envs/env/bin:$PATH
+
+RUN ~/miniconda3/bin/conda install pytorch torchvision cudatoolkit=11.3 -c pytorch -y && \
+        pip install cython numpy moviepy uvicorn fastapi timm plotly ninja pandas && \
+        ~/miniconda3/bin/conda clean --all && \
+        MMCV_WITH_OPS=1 pip install -e src/mmcv/  && \
+        pip install -v -e src/mmaction2/  && \
+        pip install -v -e src/mmdetection/  
+
+CMD nvidia-smi
+
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
