@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
+
+#basics
+#RUN apk add --no-cache bash
+RUN apt-get update && apt-get install -yq wget
+WORKDIR /app
+
+#download env
+COPY environment.yml .
+
+#download miniconda and init
+RUN mkdir -p ~/miniconda3 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh && \
+    bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3 && \
+    rm -rf ~/miniconda3/miniconda.sh && \
+    ~/miniconda3/bin/conda update conda && \
+    ~/miniconda3/bin/conda init bash && \
+    ~/miniconda3/bin/conda init zsh
+
+RUN ~/miniconda3/bin/conda env create -f environment.yml
+
+# download code
+COPY . .
+
+# Make RUN commands use the new environment:
+SHELL ["~/miniconda3/bin/conda", "run", "-n", "sdeploy", "/bin/bash", "-c"]
+
+RUN MMCV_WITH_OPS=1 pip install -e src/mmcv/  && \
+    pip install -v -e src/mmaction2/  && \
+    pip install -v -e src/mmdetection/ && \
+    pip install uvicorn
+
+
+
+ENTRYPOINT ["conda", "run", "-n", "sdeploy", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]

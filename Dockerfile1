@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
+
+#basics
+#RUN apk add --no-cache bash
+RUN apt-get update && apt-get install -yq wget
+WORKDIR /app
+
+# download code
+COPY . .
+
+#download env
+RUN mkdir -p ~/miniconda3 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh && \
+    bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3 && \
+    rm -rf ~/miniconda3/miniconda.sh && \
+    ~/miniconda3/bin/conda update conda && \
+    ~/miniconda3/bin/conda init bash && \
+    ~/miniconda3/bin/conda init zsh && \
+    #~/miniconda3/bin/conda env create -f environment.yml && \
+    ~/miniconda3/bin/conda env create -n sdeploy python=3.7 && \
+    #~/miniconda3/bin/conda run -n sdeploy MMCV_WITH_OPS=1 pip install -e src/mmcv/  && \
+    #~/miniconda3/bin/conda run -n sdeploy pip install -v -e src/mmaction2/  && \
+    #~/miniconda3/bin/conda run -n sdeploy pip install -v -e src/mmdetection/ && \
+    ~/miniconda3/bin/conda run -n sdeploy pip install uvicorn
+
+# Make RUN commands use the new environment:
+SHELL ["conda", "run", "-n", "sdeploy", "/bin/bash", "-c"]
+
+
+
+
+# The code to run when container is started:
+#ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "sdeploy", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/bin/bash" "-c", "~/miniconda3/bin/conda" "run" "-n" "sdeploy" "uvicorn" "src.main:app" "--host" "0.0.0.0" "--port" "5000"]
