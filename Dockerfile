@@ -28,7 +28,6 @@ RUN adduser --disabled-password \
 
 COPY environment.yml /tmp/
 RUN chown $UID:$GID /tmp/environment.yml
-
 COPY entrypoint.sh /usr/local/bin/
 RUN chown $UID:$GID /usr/local/bin/entrypoint.sh && \
     chmod u+x /usr/local/bin/entrypoint.sh
@@ -39,7 +38,6 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     chmod +x ~/miniconda.sh && \
     ~/miniconda.sh -b -p $CONDA_DIR && \
     rm ~/miniconda.sh
-
 # make non-activate conda commands available
 ENV PATH=$CONDA_DIR/bin:$PATH
 # make conda activate command available from /bin/bash --login shells
@@ -57,7 +55,6 @@ RUN conda update --name base --channel defaults conda && \
     conda env create --prefix $ENV_PREFIX --file /tmp/environment.yml --force && \
     conda clean --all --yes
 
-#copy all code
 COPY . .
 
 RUN conda activate $ENV_PREFIX && \
@@ -67,10 +64,10 @@ RUN conda activate $ENV_PREFIX && \
     pip install -v -e src/mmdetection/ && \
     conda deactivate
 
-
 EXPOSE 5000
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 
-# default command will launch JupyterLab server for development
+
 #command to build:  docker image build   --build-arg username=servai   --build-arg uid=1000   --build-arg gid=100   --file Dockerfile -t sdeploy .
+#command to run: docker run --rm --gpus all -p 5000:5000  sdeploy 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]

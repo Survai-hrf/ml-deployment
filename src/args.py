@@ -1,7 +1,6 @@
 import argparse
 import os
 import json
-#import psycopg2
 import shutil
 
 from mmdetection.src.apply_to_video import perform_video_od
@@ -51,7 +50,7 @@ def processvideo(mux_url, video_id):
     generate_visuals(video_id) #TODO: GRAPH SUCKS
 
     print('generating statistics...')
-    generate_statistics(video_id) #TODO: CALCULATE 
+    generate_statistics(video_id) #TODO: GENERATE VIOLENT ACTIONS
 
     print('generating master json and saving...')
     final_json = generate_master(video_id) #TODO: violent actions broken , also formulate it right
@@ -68,25 +67,7 @@ def processvideo(mux_url, video_id):
         pass
 
     print('all operations complete!')
-    
-    '''
-    #?update status table
-    sql = """UPDATE video
-                SET status_id = %s
-                WHERE id = %s"""
 
-    try:
-        conn = psycopg2.connect()
-        cur = conn.cursor()
-        cur.execute(sql, (2, video_id))
-        conn.commit()
-        cur.close()
-        conn.close()
-
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    print("works")
-    '''
     return
 
 if __name__ == '__main__':

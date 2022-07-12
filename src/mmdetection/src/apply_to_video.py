@@ -90,8 +90,8 @@ def perform_video_od(video_id):
 
 
     VIDEO_DIR = 'temp_videodata_storage/'
-    TEMP_IMAGE_STORAGE_DIR = 'mmdetection/image_temp'
-    TEMP_AUDIO_STORAGE_DIR = 'mmdetection/audio_temp'
+    TEMP_IMAGE_STORAGE_DIR = 'src/mmdetection/image_temp'
+    TEMP_AUDIO_STORAGE_DIR = 'src/mmdetection/audio_temp'
 
 
     os.makedirs(VIDEO_DIR, exist_ok=True)
