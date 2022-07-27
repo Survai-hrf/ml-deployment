@@ -6,7 +6,7 @@ import datetime as dt
 import plotly
 
 
-def generate_visuals(video_id):
+def generate_visuals(video_id, dev_mode=False):
 
     def format_and_export_plotly_to_json(fig):
 
@@ -26,6 +26,9 @@ def generate_visuals(video_id):
         
         with open(export_json_name, "w") as outfile:
             json.dump(data, outfile)
+        
+        if dev_mode == True:
+            fig.write_image(f"temp_videodata_storage/{video_id}_viz.png")
 
 
 
@@ -53,11 +56,17 @@ def generate_visuals(video_id):
         df['seconds'] = pd.to_datetime(df['seconds'])
         # TODO: reorder columns to be in right order
 
+
         return df
 
 
 
     df = create_df_all_models()
+
+    #print csv of all detections if dev mode specified
+    if dev_mode == True:
+        df.to_csv(f'processed/detect_{video_id}.csv')
+
 
     # create fig with histogram
     bins = 200

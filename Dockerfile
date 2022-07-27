@@ -67,6 +67,7 @@ RUN conda activate $ENV_PREFIX && \
 EXPOSE 5000
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 
+# TODO: IGNORE ARCHIVE
 
 #command to build:  docker image build   --build-arg username=servai   --build-arg uid=1000   --build-arg gid=100   --file Dockerfile -t sdeploy .
 #command to run: docker run --rm --gpus all -p 5000:5000  sdeploy 

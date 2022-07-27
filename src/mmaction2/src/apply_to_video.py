@@ -2,8 +2,8 @@ import json
 import random
 from collections import deque
 from operator import itemgetter
+import glob 
 
-import os
 import cv2
 import mmcv
 import numpy as np
@@ -14,7 +14,7 @@ from mmcv.parallel import collate, scatter
 from mmaction.apis import init_recognizer
 from mmaction.datasets.pipelines import Compose
 
-def perform_video_ar(video_id):
+def perform_video_ar(video_id, folder):
 
     def get_results_video(det_per_second, result_queue,thr,ind,fps):
         if len(result_queue) != 0:
@@ -59,7 +59,13 @@ def perform_video_ar(video_id):
         det_per_second = {}
         frame_queue = deque(maxlen=sample_length)
         result_queue = deque(maxlen=1)
-        cap = cv2.VideoCapture(f'{VIDEO_DIR}{video}')
+
+        #if folder is not specified default to this
+        if folder == '':
+            cap = cv2.VideoCapture(f'{VIDEO_DIR}{video}')
+        # if a folder of videos is specified
+        else:
+            cap = cv2.VideoCapture(folder)
         num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
         ind = 0
@@ -144,11 +150,11 @@ def perform_video_ar(video_id):
     
 
 
-    #ARGUEMENTS
+
     VIDEO_DIR = f'temp_videodata_storage/'
-    config = 'src/model_artifacts/ar/swin_base_patch244_window877_kinetics400_22k_custom.py'
-    checkpoint= 'src/model_artifacts/ar/best_top1_acc_epoch_20.pth'
-    label= 'src/model_artifacts/ar/label_map_svar_mk1.txt'
+    config = glob.glob('src/model_artifacts/ar/*.py')[0]
+    checkpoint= glob.glob('src/model_artifacts/ar/*.pth')[0]
+    label= glob.glob('src/model_artifacts/ar/*.txt')[0]
     input_step=1
     device='cuda:0'
     threshold=4.0
