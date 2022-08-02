@@ -71,4 +71,6 @@ ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 
 #command to build:  docker image build   --build-arg username=servai   --build-arg uid=1000   --build-arg gid=100   --file Dockerfile -t sdeploy .
 #command to run: docker run --rm --gpus all -p 5000:5000  sdeploy 
+#docker tag sdeploy2:latest seanbackstrom/sdeploy2:sdeploy2
+#docker push seanbackstrom/sdeploy2:sdeploy2
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
