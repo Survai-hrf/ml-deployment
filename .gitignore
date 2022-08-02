@@ -4,3 +4,8 @@
 model_artifacts
 .env
 *.mp3
+*.png
+*.csv
+*.jpg
+*.pyc
+__pycache__

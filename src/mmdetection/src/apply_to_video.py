@@ -7,14 +7,14 @@ import numpy as np
 import collections
 from mmdet.apis import inference_detector, init_detector
 import json
+import glob
 import matplotlib
 matplotlib.use('agg')
 
 
 
-def perform_video_od(video_id):
+def perform_video_od(video_id, gen_video, folder):
     
-
     def calculate_mode(fps_frame_list, current_second):
 
         class_list = open("src/model_artifacts/od/classes.txt","r").readlines()
@@ -80,13 +80,17 @@ def perform_video_od(video_id):
 
 
 
+    
+    # if folder of videos is not specified default to:
+    if folder == '':
+        video = f'temp_videodata_storage/{video_id}.mp4'
+    else:
+        video = folder
 
-    video = f'temp_videodata_storage/{video_id}.mp4'
-    config = 'src/model_artifacts/od/mask_rcnn_swin-s-p4-w7_fpn_fp16_ms-crop-3x_coco.py'
-    checkpoint = 'src/model_artifacts/od/epoch_42.pth'
+    config = glob.glob("src/model_artifacts/od/*.py")[0]
+    checkpoint = glob.glob("src/model_artifacts/od/*.pth")[0]
     device = 'cuda:0'
     score_thr = 0.5
-    gen_overlay = False
 
 
     VIDEO_DIR = 'temp_videodata_storage/'
@@ -110,13 +114,21 @@ def perform_video_od(video_id):
     for f in os.listdir(TEMP_IMAGE_STORAGE_DIR):
         os.remove(os.path.join(TEMP_IMAGE_STORAGE_DIR, f))
     # Pull Audio from video to apply to overlay video
+
     try:
-        if gen_overlay == True:
-            my_clip = mp.VideoFileClip(f'{VIDEO_DIR}{video_id}.mp4')
+
+        if gen_video == True:
+
+            if folder == '':
+                my_clip = mp.VideoFileClip(f'{VIDEO_DIR}{video_id}.mp4')
+            else:
+                my_clip = mp.VideoFileClip(folder)
+
             my_clip.audio.write_audiofile(f'{TEMP_AUDIO_STORAGE_DIR}/{video_id}.mp3')
             print("audio saved...")
 
-    except AttributeError:
+    except Exception as e: 
+        print(e)
         print("no audio!")
 
     capture = cv2.VideoCapture(video)
@@ -171,11 +183,11 @@ def perform_video_od(video_id):
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
 
 
-
+            # generate json results every 1 second
             if len(frames) == batch_size:
                 
 
-                if gen_overlay == True: 
+                if gen_video == True: 
                     for i, item in enumerate(zip(frames, result)):
 
                         frame = model.show_result(item[0], item[1], score_thr=score_thr)
@@ -224,23 +236,24 @@ def perform_video_od(video_id):
         
     capture.release()
 
-    if gen_overlay == True:
+    if gen_video == True:
 
         # Directory of images to assemble video from
         images = list(glob.iglob(os.path.join(TEMP_IMAGE_STORAGE_DIR, '*.*')))
         # Sort the images by integer index
         images = sorted(images, key=lambda x: float(os.path.split(x)[1][:-3]))
 
-        outvid = f'{video_id}_overlay.mp4'
+        outvid = f'temp_videodata_storage/{video_id}_overlay.mp4'
         make_video(outvid, images, fps=round(fps))
 
 
 
     #Apply Audio to Overlay#################################################################################################################
-    if gen_overlay == True:
+    if gen_video == True:
         try:
             print("Applying audio...")
             audio_clip = mp.AudioFileClip(f'{TEMP_AUDIO_STORAGE_DIR}/{video_id}.mp3')
+            my_clip = mp.VideoFileClip(outvid)
             my_clip = my_clip.set_audio(audio_clip)
             my_clip.write_videofile(f'processed/{video_id}_overlay.mp4')
             print("Audio Applied Succesfully, video saved to out dir")

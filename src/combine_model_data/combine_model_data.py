@@ -2,7 +2,7 @@ import json
 import cv2
 
 
-def combine_model_data(video_id):
+def combine_model_data(video_id, folder):
 
     def get_length(filename):
         cap = cv2.VideoCapture(filename)
@@ -26,8 +26,11 @@ def combine_model_data(video_id):
     with open(f'temp_videodata_storage/{video_id}_ar.json') as json_file:
         ar_json = json.load(json_file)
         ar_json = {int(k):v for k,v in ar_json.items()}
-
-    video_length = get_length(f"temp_videodata_storage/{video_id}.mp4")
+    
+    if folder == '':
+        video_length = get_length(f"temp_videodata_storage/{video_id}.mp4")
+    else:
+        video_length = get_length(folder)
     merged_json = mergeDictionary(od_json, ar_json)
     combined_json = {}
     combined_json['seconds'] = merged_json
