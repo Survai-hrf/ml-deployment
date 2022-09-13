@@ -1,4 +1,7 @@
+
 # SurvAI Model Production & Deployment Repository
+
+![image (1)](https://user-images.githubusercontent.com/29393311/189803632-58275057-3501-4c93-8b75-77c37062d182.png)
 
 Contained in this repo is the full model architecture that makes up SurvAI. It contains the Action Recognition and Object Detection model as well as meta tools to
 utilize both models in tandem. These meta tools allow the exporting of all necessary JSON information for web which includes a serialized graph for the front end.
