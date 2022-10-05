@@ -9,7 +9,8 @@ from combine_model_data.combine_model_data import combine_model_data
 from generate_visuals.generate_visuals import generate_visuals
 from generate_master.generate_master import generate_master
 from generate_statistics.generate_statistics import generate_statistics
-import urllib.request
+from connect_and_download.connect_and_download import connect_and_download
+
 
 def parse_args():
     '''THIS SCRIPT WIPES ALL PROCESSED DATA WHEN IT STARTS AND ENDS. TO DISABLE USE --dev-mode 
@@ -20,8 +21,6 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(
         description='MMAction2 predict different labels in a long video demo')
-    parser.add_argument('mux_url', help='mux url, writes out detections.json to processed/(VIDEO_ID)/')
-    parser.add_argument('video_id', help='unique id for saving video and video info')
     parser.add_argument('--gen-video', default=False, action='store_true', help='generates video overlay')
     parser.add_argument('--folder', default='', help='path/to/folder/of/videos')
     parser.add_argument('--dev-mode', default=False, action='store_true', help='does not wipe anything, \
@@ -29,27 +28,22 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-args = parse_args()
 
-def processvideo(mux_url, video_id, gen_video=False, folder='', dev_mode=False):
+def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
 
     #don't wipe previous data if devmode was specified
     if dev_mode == False:
-        try:
-            shutil.rmtree('processed')
+        try:    
             shutil.rmtree('temp_videodata_storage')
+            shutil.rmtree('processed')
         except:
             pass    
     
-    #download video for processing
-    print("downloading media...")
     os.makedirs(f'temp_videodata_storage', exist_ok=True)
     os.makedirs(f'processed', exist_ok=True)
 
-    # if not using folders, download video from mux
-    if folder == '':
-        urllib.request.urlretrieve(f"{mux_url}?download={video_id}.mp4", f'temp_videodata_storage/{video_id}.mp4') 
-        print('downloading complete')
+    print("downloading media...")
+    video_id, resp = connect_and_download(args.folder)
 
     #process video
     print('initiating object detection model for inference...')
@@ -92,15 +86,15 @@ if __name__ == '__main__':
 
     # if no folder is provided
     if args.folder == '':
-        processvideo(args.mux_url, args.video_id, args.gen_video, args.folder, args.dev_mode)
+        video_id=1
+        processvideo(video_id, args.gen_video, args.folder, args.dev_mode)
+
     else:
-        
         import os
         import mimetypes
         from cv2 import VideoCapture
         import traceback
         mimetypes.init()
-
 
         #iterate folder and all subfolders looking for videos
         for subdir, dirs, files in os.walk(args.folder):
@@ -120,7 +114,7 @@ if __name__ == '__main__':
                         try:
                             capture = VideoCapture(filepath)
                             print(filepath)
-                            processvideo('', os.path.splitext(file)[0], args.gen_video, filepath, args.dev_mode)
+                            processvideo(os.path.splitext(file)[0], args.gen_video, filepath, args.dev_mode)
                         except Exception as e:
                             print(f"broken video: {filepath}")
                             print(e)

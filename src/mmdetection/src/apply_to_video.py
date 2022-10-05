@@ -90,7 +90,7 @@ def perform_video_od(video_id, gen_video, folder):
     config = glob.glob("src/model_artifacts/od/*.py")[0]
     checkpoint = glob.glob("src/model_artifacts/od/*.pth")[0]
     device = 'cuda:0'
-    score_thr = 0.5
+    score_thr = 0.8
 
 
     VIDEO_DIR = 'temp_videodata_storage/'
@@ -105,7 +105,7 @@ def perform_video_od(video_id, gen_video, folder):
 
     #MODEL CONFIG
     # We use a RTX3090 with 24GB memory, which works on 36 images. 
-    batch_size = 30
+    
 
 
     #load model
@@ -147,7 +147,7 @@ def perform_video_od(video_id, gen_video, folder):
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     fps = round(capture.get(cv2.CAP_PROP_FPS))
-
+    batch_size = fps
     while True:
         
         ret, frame = capture.read()
@@ -183,19 +183,24 @@ def perform_video_od(video_id, gen_video, folder):
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
 
 
+
             # generate json results every 1 second
+            print(len(frames), batch_size)
+
             if len(frames) == batch_size:
-                
 
                 if gen_video == True: 
                     for i, item in enumerate(zip(frames, result)):
 
                         frame = model.show_result(item[0], item[1], score_thr=score_thr)
 
-                        name = '{0}.jpg'.format(frame_count + i - batch_size)
+                        name = '{0}.jpg'.format(frame_count + i - batch_size + 1)
                         name = os.path.join(TEMP_IMAGE_STORAGE_DIR, name)
                         cv2.imwrite(name, frame)
                         print('writing to file:{0}'.format(name))
+                
+
+
 
             if frame_count % fps == 0:
                 calculate_mode(fps_frame_list, current_second=frame_count/fps)

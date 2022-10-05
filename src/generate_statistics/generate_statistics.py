@@ -23,6 +23,7 @@ def generate_statistics(video_id):
     res['violent_actions'] = sum
 
     #modify name values
+    
     """
     try:
         res['non_uniformed'] = res.pop('Non Uniformed')

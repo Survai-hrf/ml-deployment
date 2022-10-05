@@ -55,7 +55,7 @@ def perform_video_ar(video_id, folder):
 
     def show_results(model, data, label):
 
-        video = video_id + '.mp4'
+        video = str(video_id) + '.mp4'
         det_per_second = {}
         frame_queue = deque(maxlen=sample_length)
         result_queue = deque(maxlen=1)
