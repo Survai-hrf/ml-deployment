@@ -183,20 +183,20 @@ def perform_video_od(video_id, gen_video, folder):
 
                 bbox_result, segm_result = batch_frame
                 bboxes = np.vstack(bbox_result)
-                #bbox_df = pd.DataFrame(bboxes, columns=['A', 'B', 'C', 'D', 'E'])
-                #bbox_df.to_csv(r'bbox.csv', index=False)
+        
                 labels = [
                     np.full(bbox.shape[0], i, dtype=np.int32)
                     for i, bbox in enumerate(bbox_result)
                 ]
                 labels = np.concatenate(labels)
-                #print(labels)
+                
 
                 scores = bboxes[:, -1]
+                bb = bboxes[scores > score_thr]
                 labels = labels[scores > score_thr] # keep only the labels that score above the confidence score threshold
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
                 json_list[file_name] = {
-                    'bbox': bboxes.tolist(),
+                    'bbox': bb.tolist(),
                     'labels': labels.tolist()
                 }
                 i += 1
