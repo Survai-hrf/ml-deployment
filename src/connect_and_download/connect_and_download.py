@@ -48,6 +48,7 @@ def connect_and_download(folder):
             resp=1
 
         except Exception as e:
+            video_id='failure'
             resp=0
             print(f"FAILURE: {e}")
 

@@ -32,58 +32,62 @@ def parse_args():
 
 def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
 
-    #don't wipe previous data if devmode was specified
-    if dev_mode == False:
-        try:    
-            shutil.rmtree('temp_videodata_storage')
-            shutil.rmtree('processed')
-        except:
-            pass    
-    
-    os.makedirs(f'temp_videodata_storage', exist_ok=True)
-    os.makedirs(f'processed', exist_ok=True)
-
-    print("downloading media...")
-    video_id, resp = connect_and_download(args.folder)
-
-    #process video
-    print('initiating object detection model for inference...')
-    perform_video_od(video_id, gen_video, folder) #TODO: FIX MODEL NOT STOPPING AT BATCH SIZE/SLOWING DOWN BY READING AT SECOND -- CALCULATE STATS AFTER HITTING THRESHOLD
-
-    print('initiating action classification model for inference...')
-    perform_video_ar(video_id, folder) #TODO: MODEL SUCKS
-
-    print('combining model results...')
-    combine_model_data(video_id, folder)
-
-    print('generating visuals...')
-    generate_visuals(video_id, dev_mode) #TODO: GRAPH SUCKS
-
-    print('generating statistics...')
-    generate_statistics(video_id) # what specifies a "violent action" and its calculation is specified here
-
-    print('generating master json and saving...')
-    final_json = generate_master(video_id) #TODO: violent actions broken , also formulate it right
-
-    #save json as processed/(VIDEO_ID)/(VIDEO_ID).json
-    if dev_mode == True:
-        with open(f'processed/{video_id}.json', 'w+') as file:
-            json.dump(final_json, file)
-
-    #send json to web
-    API_ENDPOINT = "https://glimpse-kjkgb.ondigitalocean.app/"
-    data = final_json
-    r = requests.post(url=API_ENDPOINT, data=data)
+    while True:
+        #don't wipe previous data if devmode was specified
+        if dev_mode == False:
+            try:    
+                shutil.rmtree('temp_videodata_storage')
+                shutil.rmtree('processed')
+            except:
+                pass    
         
-    if dev_mode == False:
-        #clear all temp storage from previous operation
-        print('clearing all temp storage...')
-        try:
-            shutil.rmtree('temp_videodata_storage')
-        except:
-            pass
+        os.makedirs(f'temp_videodata_storage', exist_ok=True)
+        os.makedirs(f'processed', exist_ok=True)
 
-    print('all operations complete!')
+        print("downloading media...")
+        video_id, resp = connect_and_download(args.folder)
+
+        if resp == 0:
+            print("No more messages, shutting down")
+            break
+        #process video
+        print('initiating object detection model for inference...')
+        perform_video_od(video_id, gen_video, folder) #TODO: FIX MODEL NOT STOPPING AT BATCH SIZE/SLOWING DOWN BY READING AT SECOND -- CALCULATE STATS AFTER HITTING THRESHOLD
+
+        print('initiating action classification model for inference...')
+        perform_video_ar(video_id, folder) #TODO: MODEL SUCKS
+
+        print('combining model results...')
+        combine_model_data(video_id, folder)
+
+        print('generating visuals...')
+        generate_visuals(video_id, dev_mode) #TODO: GRAPH SUCKS
+
+        print('generating statistics...')
+        generate_statistics(video_id) # what specifies a "violent action" and its calculation is specified here
+
+        print('generating master json and saving...')
+        final_json = generate_master(video_id) #TODO: violent actions broken , also formulate it right
+
+        #save json as processed/(VIDEO_ID)/(VIDEO_ID).json
+        if dev_mode == True:
+            with open(f'processed/{video_id}.json', 'w+') as file:
+                json.dump(final_json, file)
+
+        #send json to web
+        API_ENDPOINT = "https://glimpse-kjkgb.ondigitalocean.app/"
+        data = final_json
+        r = requests.post(url=API_ENDPOINT, data=data)
+            
+        if dev_mode == False:
+            #clear all temp storage from previous operation
+            print('clearing all temp storage...')
+            try:
+                shutil.rmtree('temp_videodata_storage')
+            except:
+                pass
+
+        print('all operations complete!')
     return
 
 if __name__ == '__main__':
