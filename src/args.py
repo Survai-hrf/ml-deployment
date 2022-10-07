@@ -2,6 +2,7 @@ import argparse
 import os
 import json
 import shutil
+import requests
 
 from mmdetection.src.apply_to_video import perform_video_od
 from mmaction2.src.apply_to_video import perform_video_ar
@@ -65,10 +66,15 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
     final_json = generate_master(video_id) #TODO: violent actions broken , also formulate it right
 
     #save json as processed/(VIDEO_ID)/(VIDEO_ID).json
-    with open(f'processed/{video_id}.json', 'w+') as file:
-        json.dump(final_json, file)
+    if dev_mode == True:
+        with open(f'processed/{video_id}.json', 'w+') as file:
+            json.dump(final_json, file)
 
-
+    #send json to web
+    API_ENDPOINT = "https://glimpse-kjkgb.ondigitalocean.app/"
+    data = final_json
+    r = requests.post(url=API_ENDPOINT, data=data)
+        
     if dev_mode == False:
         #clear all temp storage from previous operation
         print('clearing all temp storage...')

@@ -1,5 +1,6 @@
 import json
 import glob
+import re
 
 def generate_statistics(video_id):
 
@@ -11,31 +12,29 @@ def generate_statistics(video_id):
         for key, ele in sub.items():
             res[key] = ele + res.get(key, 0)
     
+    #modify name values
+    res = {k.upper(): v for k, v in res.items()}
+    res = {re.sub(r'[_\s+]', '', k): v for k, v in res.items()}
+
+    all_keys = {'BATON':'baton', 'CHEMICALSMOKE':'chemicalSmoke', 'NONUNIFORMED':'nonUniformed',
+                'UNIFORMED':'uniformed', 'RIOTSHIELD':'riotShield', 'PEPPERSPRAY':'pepperSpray', 'GUN': 'gun', 
+                'ARRESTING': 'restraining', 'BRAWLING':'brawling', 'CROWD':'crowd', 'PERSONONGROUND':'personOnGround',
+                'RUNNING': 'running', 'SPRAY':'spray', 'STRIKING':'striking', 'THROWING':'throwing'}
+
+    res = {all_keys[k]: v for k,v in res.items()}
 
     #calculate violent actions
 
-    violent_actions = ['striking', 'brawling', 'arresting']
+    violent_actions = ['striking', 'brawling', 'restraining']
     sum = 0
     for va in violent_actions:
         for key, value in res.items():
             if key == va:
                 sum = value + sum
-    res['violent_actions'] = sum
-
-    #modify name values
-    
-    """
-    try:
-        res['non_uniformed'] = res.pop('Non Uniformed')
-        res['uniformed'] = res.pop('Uniformed')
-        res['chemical_smoke'] = res.pop('Chemical Smoke')
-        res['riot_shield'] = res.pop('Riot Shield')
-        res['baton'] = res.pop('Baton')
-        res['restraining'] = res.pop('arresting')
-    except Exception as e:
-        print(e)
-    """
+    res['violentActions'] = sum
+    final = {}
+    final['table'] = res
 
 
     with open(f"temp_videodata_storage/{video_id}_stats.json", "w") as outfile:
-        json.dump(res, outfile)
+        json.dump(final, outfile)
