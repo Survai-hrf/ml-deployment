@@ -1,0 +1,27 @@
+{
+"info":{"description": "project-name"},
+
+"images": [{"id": 1, 
+	    "width": 1920, 
+            "height": 1080,
+	    "file_name": "img_1"},
+	   ],
+"annotations": [{"id": 1,
+		 "iscrowd": 0,
+		 "image_id": 1,
+		 "category_id": 6,
+		 "segmentation": [[43.4, 24.3, 54.1, 18.2]],
+		 "bbox": [23.1, 25.2, 72.1, 40.2],
+		 "area": 836.4343287}
+		],
+"categories": [{"id":1,"name":"uniformed"},
+	       {"id":2,"name":"non_uniformed"},
+	       {"id":3,"name":"riot_shield"},
+	       {"id":4,"name":"gun"},
+               {"id":5,"name":"pepper_spray"},
+               {"id":6,"name":"baton"},
+               {"id":7,"name":"chemical_smoke"}
+              ]
+
+}
+

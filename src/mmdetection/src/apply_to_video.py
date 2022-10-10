@@ -148,13 +148,22 @@ def perform_video_od(video_id, gen_video, folder):
     frame_count = 0
     det_per_second = {}
     fps_frame_list = []
-    json_list = {}
+
+
+    json_store = {}
+    images_list = []
+    annotations_list = []
+
+
     # these 2 lines can be removed if you dont have a 1080p camera.
     height = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
     width = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     fps = round(capture.get(cv2.CAP_PROP_FPS))
+
+    
+
 
     while True:
         
@@ -169,6 +178,7 @@ def perform_video_od(video_id, gen_video, folder):
 
         print('frame_count :{0}'.format(frame_count))
         
+        annotation_id = 0
         # if need to reset gpu batch, or calculate the det per second
         if len(frames) == batch_size or frame_count % fps == 0:
 
@@ -177,6 +187,7 @@ def perform_video_od(video_id, gen_video, folder):
             # calculate and store detections in fps_frame_list
             i = 1
             for batch_frame in result:
+
                 file_name = f'{frame_count + i - batch_size}.jpg'
 
                 score_thr=score_thr # set confidence score threshold
@@ -190,15 +201,21 @@ def perform_video_od(video_id, gen_video, folder):
                 ]
                 labels = np.concatenate(labels)
                 
-
                 scores = bboxes[:, -1]
+                
                 bb = bboxes[scores > score_thr]
                 labels = labels[scores > score_thr] # keep only the labels that score above the confidence score threshold
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
-                json_list[file_name] = {
+
+                '''
+                json_store[file_name] = {
                     'bbox': bb.tolist(),
                     'labels': labels.tolist()
-                }
+                }'''
+
+                annotations_list.append({
+                    'boobies'
+                })
                 i += 1
 
 
@@ -207,10 +224,22 @@ def perform_video_od(video_id, gen_video, folder):
                 
                 # save raw frames to folder
                 for i, item in enumerate(zip(frames, result)):
+                    id = frame_count + i - batch_size
+                    file_name = f'{id}.jpg'
                     name = '{0}.jpg'.format(frame_count + i - batch_size)
                     name = os.path.join(RAW_FRAME_STORAGE_DIR, name)
                     cv2.imwrite(name, frame)
                     print('saving raw frame:{0}'.format(name))
+
+                    # generate 'images' dictionary
+
+                    images_list.append({
+                        'id': id,
+                        'width': width,
+                        'height': height,
+                        'file_name': file_name
+                    })
+                
 
                 if gen_video == True: 
                     for i, item in enumerate(zip(frames, result)):
@@ -226,10 +255,12 @@ def perform_video_od(video_id, gen_video, folder):
                 calculate_mode(fps_frame_list, current_second=frame_count/fps)
                 fps_frame_list = []
 
+            # create 'annotations' dictionary
+            json_store['annotations']: annotations_list
             print('Predicted')
             frames = []
             ### CALCULATE DETECTIONS PER FRAME #######################################################
-            
+            '''
             i=1
             for batch_frame in result:
                 score_thr=score_thr
@@ -250,10 +281,20 @@ def perform_video_od(video_id, gen_video, folder):
                 det_per_second[frame_count - batch_size + i] = detection_counter
                 
                 i += 1
-            
+            '''
             ##############################################################################################
-            
-            
+
+    # create 'info' dictionary for json
+    json_store['info'] = {
+        'description': video_id
+    }
+
+    # create 'images dictionary containing info for all images       
+    json_store['images'] = images_list
+
+    
+
+
 
     # WRITE ALL DET IN FRAME TO DICT
     with open(f'{VIDEO_DIR}{video_id}_od.json', 'w+') as file:
@@ -261,7 +302,7 @@ def perform_video_od(video_id, gen_video, folder):
 
     # Write file, bbox and label data to json
     with open(f'{VIDEO_DIR}{video_id}_export_data.json', 'w+') as f:
-        json.dump(json_list, f)
+        json.dump(json_store, f)
 
 
     # WRITE FILE NAMES, BBOXES w/ LABELS TO DICT
