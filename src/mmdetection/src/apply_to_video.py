@@ -1,3 +1,4 @@
+from unicodedata import category
 import pandas as pd
 import cv2
 import os
@@ -185,7 +186,7 @@ def perform_video_od(video_id, gen_video, folder):
             result = inference_detector(model, frames)
 
             # calculate and store detections in fps_frame_list
-            i = 1
+            i = 0
             for batch_frame in result:
 
                 file_name = f'{frame_count + i - batch_size}.jpg'
@@ -207,16 +208,29 @@ def perform_video_od(video_id, gen_video, folder):
                 labels = labels[scores > score_thr] # keep only the labels that score above the confidence score threshold
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
 
-                '''
-                json_store[file_name] = {
-                    'bbox': bb.tolist(),
-                    'labels': labels.tolist()
-                }'''
+                #TODO make for loop to iterate through each bounding box and label in the frame
 
-                annotations_list.append({
-                    'boobies'
-                })
+                temp_dict = {}
+                
+                
+                for b in bb.tolist():
+
+                    b[2] = b[2] - b[0]
+                    b[3] = b[3] - b[1]
+
+                    annotations_list.append({
+                        'id': annotation_id,
+                        'image_id': frame_count + i - batch_size,
+                        'category_id': labels.tolist()[annotation_id],
+                        'segmentation': [],
+                        'bbox': b[0:4],   
+                    })
+
+                    annotation_id += 1
+
+                annotation_id = 0
                 i += 1
+            
 
 
             # generate json results every 1 second
@@ -255,12 +269,11 @@ def perform_video_od(video_id, gen_video, folder):
                 calculate_mode(fps_frame_list, current_second=frame_count/fps)
                 fps_frame_list = []
 
-            # create 'annotations' dictionary
-            json_store['annotations']: annotations_list
+            
             print('Predicted')
             frames = []
             ### CALCULATE DETECTIONS PER FRAME #######################################################
-            '''
+            
             i=1
             for batch_frame in result:
                 score_thr=score_thr
@@ -281,20 +294,33 @@ def perform_video_od(video_id, gen_video, folder):
                 det_per_second[frame_count - batch_size + i] = detection_counter
                 
                 i += 1
-            '''
+            
             ##############################################################################################
 
-    # create 'info' dictionary for json
+
+
+    # build json in coco format
     json_store['info'] = {
         'description': video_id
     }
-
-    # create 'images dictionary containing info for all images       
+    
     json_store['images'] = images_list
 
+
+    json_store['annotations'] = annotations_list
+
+
+    json_store['categories'] = [
+        {"id":0,"name":"uniformed"},
+	    {"id":1,"name":"non_uniformed"},
+	    {"id":2,"name":"riot_shield"},
+	    {"id":3,"name":"gun"},
+        {"id":4,"name":"pepper_spray"},
+        {"id":5,"name":"baton"},
+        {"id":6,"name":"chemical_smoke"}
+    ]
     
-
-
+    
 
     # WRITE ALL DET IN FRAME TO DICT
     with open(f'{VIDEO_DIR}{video_id}_od.json', 'w+') as file:
