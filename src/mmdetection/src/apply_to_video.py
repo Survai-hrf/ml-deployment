@@ -102,7 +102,7 @@ def perform_video_od(video_id, gen_video, folder):
     VIDEO_DIR = 'temp_videodata_storage/'
     TEMP_IMAGE_STORAGE_DIR = 'src/mmdetection/image_temp'
     TEMP_AUDIO_STORAGE_DIR = 'src/mmdetection/audio_temp'
-    RAW_FRAME_STORAGE_DIR = 'src/mmdetection/raw_frames'
+    RAW_FRAME_STORAGE_DIR = 'raw_frames/'
 
 
     os.makedirs(VIDEO_DIR, exist_ok=True)
@@ -207,10 +207,6 @@ def perform_video_od(video_id, gen_video, folder):
                 bb = bboxes[scores > score_thr]
                 labels = labels[scores > score_thr] # keep only the labels that score above the confidence score threshold
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
-
-                #TODO make for loop to iterate through each bounding box and label in the frame
-
-                temp_dict = {}
                 
                 
                 for b in bb.tolist():
