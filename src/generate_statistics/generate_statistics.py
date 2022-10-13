@@ -31,7 +31,7 @@ def generate_statistics(video_id):
         for key, value in res.items():
             if key == va:
                 sum = value + sum
-    res['violentActions'] = sum
+    res['forcefulActions'] = sum
     final = {}
     final['table'] = res
 

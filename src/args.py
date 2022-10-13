@@ -75,10 +75,11 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
                 json.dump(final_json, file)
 
         #send json to web
-        API_ENDPOINT = "https://glimpse-kjkgb.ondigitalocean.app/"
+        API_ENDPOINT = "https://glimpse-weld.vercel.app/api/ai"
         data = final_json
-        r = requests.post(url=API_ENDPOINT, data=data)
-            
+        r = requests.post(url=API_ENDPOINT, json=data)
+
+        print(r.content)
         if dev_mode == False:
             #clear all temp storage from previous operation
             print('clearing all temp storage...')

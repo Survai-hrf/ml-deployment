@@ -10,7 +10,7 @@ def generate_master(video_id):
         visual = json.load(f)
         
     stats['chart'] = visual
-    stats['uniqueID'] = video_id
+    stats['uniqueId'] = video_id
 
     return stats
 

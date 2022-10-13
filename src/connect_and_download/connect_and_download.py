@@ -34,19 +34,21 @@ def connect_and_download(folder):
             )
             message = response['Messages'][0]
             receipt_handle = message['ReceiptHandle']
+
+
+            data = eval(message['Body'])
+            video_id = data['uniqueId']
+            mux_url = data['muxUrl']
+
+            urllib.request.urlretrieve(f"{mux_url}?download={video_id}.mp4", f'temp_videodata_storage/{video_id}.mp4') 
+            print('downloading complete')
+            
+
             sqs.delete_message(
                 QueueUrl=queue_url,
                 ReceiptHandle=receipt_handle
             )
-
-            data = eval(message['Body'])
-            video_id = data['video_id']
-            mux_url = data['mux_url']
-
-            urllib.request.urlretrieve(f"{mux_url}?download={video_id}.mp4", f'temp_videodata_storage/{video_id}.mp4') 
-            print('downloading complete')
             resp=1
-
         except Exception as e:
             video_id='failure'
             resp=0
