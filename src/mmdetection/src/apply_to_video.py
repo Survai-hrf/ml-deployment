@@ -7,6 +7,7 @@ import numpy as np
 import collections
 from mmdet.apis import inference_detector, init_detector
 import json
+import urllib
 import glob
 import matplotlib
 matplotlib.use('agg')

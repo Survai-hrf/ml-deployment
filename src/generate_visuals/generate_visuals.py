@@ -69,27 +69,50 @@ def generate_visuals(video_id, dev_mode=False):
 
 
     #generate graph
+
     interval = alt.selection_interval(encodings=['x'])
 
     base = alt.Chart(df).properties(    
-        width=1500,
+        width=1920,
         height=50,
     )
 
     chart = base.mark_bar().encode(
-        alt.X('Seconds', bin=alt.Bin(maxbins=150, extent=interval), scale=alt.Scale(domain=interval.ref())),
-        alt.Y(alt.repeat('row'), type='quantitative'),
+        alt.X('Seconds', bin=alt.Bin(maxbins=150, extent=interval), axis=alt.Axis(labels=False, title=None, ticks=False), scale=alt.Scale(domain=interval.ref())),
+        alt.Y(alt.repeat('row'), type='quantitative', axis=alt.Axis(titleAngle=0, titlePadding=80, labels=False, ticks=False)),
+        #color=alt.Color(
+            #alt.repeat('column'), type='ordinal',
+            #scale=alt.Scale(domain= [key for key, val in color_map.items() for col in df.columns if col == key], range=[val for key, val in color_map.items() for col in df.columns if col == key]),
+        #)
+
+    ).properties(
+        width='container'
     ).repeat(
         row=list(df.columns)[1:],
+        spacing=0
     )
 
+    #chart.resolve_scale(color='independent')
+
     view = base.mark_bar().encode(
-        alt.X('Seconds', title='click and drag and use mousewheel above to zoom'),
+        alt.X('Seconds', title='click and drag and use mousewheel above to zoom', axis=alt.Axis()),
     ).add_selection(
         interval
     ).properties(
-        height=100
+        height=100,
+        width=1920
     )
 
-    return format_and_export_plotly_to_json(view, chart)
+    both = alt.VConcatChart(
+        vconcat=[view, chart],
+        spacing=100
+    ).configure_axis(
+        gridDash=[100,1]
+        #grid=True,
+    )
+
+    #(view & chart).save('chart.json')
+    #view & chart
+    return (both).save('chart.json')
+    #return format_and_export_plotly_to_json(view, chart)
 
