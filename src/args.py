@@ -45,11 +45,13 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
         os.makedirs(f'processed', exist_ok=True)
 
         print("downloading media...")
-        video_id, resp = connect_and_download(args.folder)
+        if folder == '':
+            video_id, resp = connect_and_download(args.folder)
 
-        if resp == 0:
-            print("No more messages, shutting down")
-            break
+            if resp == 0:
+                print("No more messages, shutting down")
+                break
+
         #process video
         print('initiating object detection model for inference...')
         perform_video_od(video_id, gen_video, folder) #TODO: FIX MODEL NOT STOPPING AT BATCH SIZE/SLOWING DOWN BY READING AT SECOND -- CALCULATE STATS AFTER HITTING THRESHOLD
@@ -74,12 +76,6 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
             with open(f'processed/{video_id}.json', 'w+') as file:
                 json.dump(final_json, file)
 
-        #send json to web
-        API_ENDPOINT = "https://glimpse-weld.vercel.app/api/ai"
-        data = final_json
-        r = requests.post(url=API_ENDPOINT, json=data)
-
-        print(r.content)
         if dev_mode == False:
             #clear all temp storage from previous operation
             print('clearing all temp storage...')
@@ -88,7 +84,17 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
             except:
                 pass
 
-        print('all operations complete!')
+        if folder == '':
+            #send json to web
+            API_ENDPOINT = "https://glimpse-weld.vercel.app/api/ai"
+            data = final_json
+            r = requests.post(url=API_ENDPOINT, json=data)
+            print(r.content)
+
+        else:
+            break
+        
+    print('all operations complete!')
     return
 
 if __name__ == '__main__':
@@ -125,7 +131,7 @@ if __name__ == '__main__':
                         try:
                             capture = VideoCapture(filepath)
                             print(filepath)
-                            processvideo(os.path.splitext(file)[0], args.gen_video, filepath, args.dev_mode)
+                            processvideo(video_id=os.path.splitext(file)[0], gen_video=args.gen_video, folder=filepath, dev_mode=args.dev_mode)
                         except Exception as e:
                             print(f"broken video: {filepath}")
                             print(e)

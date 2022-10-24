@@ -31,13 +31,23 @@ def perform_video_ar(video_id, folder):
             for result in results[0]:
 
                 selected_label, score = result
-                if selected_label == "striking" and score >= 3.0:
+                if selected_label == "striking" and score >= 4.0:
                     pass
-                elif selected_label == "throwing" and score <= 5.0:
+                elif selected_label == "throwing" and score <= 4.4:
                     continue
-                elif selected_label == 'spray' and score <= 6.0:
+                elif selected_label == 'spray' and score <= 4.5:
                     continue
                 elif selected_label == 'aiming' and score <= 6.0:
+                    continue
+                elif selected_label == 'person_on_ground' and score <= 4.0:
+                    continue
+                elif selected_label == 'restraining' and score <= 5.5:
+                    continue
+                elif selected_label == 'brawling' and score <= 2.6:
+                    continue
+                elif selected_label == 'crowd' and score <= 5.2:
+                    continue
+                elif selected_label == 'nothing':
                     continue
                 if score < thr:
                     continue

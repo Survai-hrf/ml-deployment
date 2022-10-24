@@ -6,9 +6,9 @@ import altair as alt
 
 def generate_visuals(video_id, dev_mode=False):
 
-    def format_and_export_plotly_to_json(view, chart):
+    def format_and_export_plotly_to_json(chart):
         export_json_name = f'temp_videodata_storage/{video_id}_chart.json'
-        (view & chart).save(export_json_name)
+        (chart).save(export_json_name)
 
         with open(export_json_name) as f:
             data = json.load(f)
@@ -113,6 +113,5 @@ def generate_visuals(video_id, dev_mode=False):
 
     #(view & chart).save('chart.json')
     #view & chart
-    return (both).save('chart.json')
-    #return format_and_export_plotly_to_json(view, chart)
+    return format_and_export_plotly_to_json(both)
 
