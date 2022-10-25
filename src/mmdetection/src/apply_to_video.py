@@ -79,11 +79,6 @@ def perform_video_od(video_id, gen_video, folder):
         vid.release()
         return vid
 
-    
-    # def generate_json(batch_frame):
-        
-
-
 
 
     
@@ -140,7 +135,6 @@ def perform_video_od(video_id, gen_video, folder):
 
     capture = cv2.VideoCapture(video)
 
-    
     
     frames = []
     
@@ -241,8 +235,8 @@ def perform_video_od(video_id, gen_video, folder):
                     cv2.imwrite(name, frame)
                     print('saving raw frame:{0}'.format(name))
 
-                    # generate 'images' dictionary
 
+                    # generate 'images' dictionary
                     images_list.append({
                         'id': id,
                         'width': width,
