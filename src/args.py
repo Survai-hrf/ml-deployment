@@ -10,7 +10,7 @@ from combine_model_data.combine_model_data import combine_model_data
 from generate_visuals.generate_visuals import generate_visuals
 from generate_master.generate_master import generate_master
 from generate_statistics.generate_statistics import generate_statistics
-from connect_and_download.connect_and_download import connect_and_download
+from connect_and_download.connect_and_download import connect_and_download, delete_message
 
 
 def parse_args():
@@ -46,32 +46,32 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
 
         print("downloading media...")
         if folder == '':
-            video_id, resp = connect_and_download(args.folder)
+            video_id, resp, receipt_handle = connect_and_download(args.folder)
 
             if resp == 0:
-                print("No more messages, shutting down")
-                break
+                print("No messages")
+                continue
+            #    break
 
         #process video
         print('initiating object detection model for inference...')
         perform_video_od(video_id, gen_video, folder) #TODO: FIX MODEL NOT STOPPING AT BATCH SIZE/SLOWING DOWN BY READING AT SECOND -- CALCULATE STATS AFTER HITTING THRESHOLD
 
         print('initiating action classification model for inference...')
-        perform_video_ar(video_id, folder) #TODO: MODEL SUCKS
+        perform_video_ar(video_id, folder)
 
         print('combining model results...')
         combine_model_data(video_id, folder)
 
         print('generating visuals...')
-        generate_visuals(video_id, dev_mode) #TODO: GRAPH SUCKS
+        generate_visuals(video_id, dev_mode) #TODO: GRAPH - TOOLTIP, BAR SIZE, BIN, ZOOM LIMIT, FONT, TICKS
 
         print('generating statistics...')
         generate_statistics(video_id) # what specifies a "violent action" and its calculation is specified here
 
         print('generating master json and saving...')
-        final_json = generate_master(video_id) #TODO: violent actions broken , also formulate it right
+        final_json = generate_master(video_id)
 
-        #save json as processed/(VIDEO_ID)/(VIDEO_ID).json
         if dev_mode == True:
             with open(f'processed/{video_id}.json', 'w+') as file:
                 json.dump(final_json, file)
@@ -91,11 +91,12 @@ def processvideo(video_id, gen_video=False, folder='', dev_mode=False):
             r = requests.post(url=API_ENDPOINT, json=data)
             print(r.content)
 
+            delete_message(receipt_handle)
+            print('message deleted')
         else:
             break
-        
-    print('all operations complete!')
-    return
+    #print('all operations complete!')
+    #return
 
 if __name__ == '__main__':
 

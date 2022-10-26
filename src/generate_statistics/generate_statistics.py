@@ -19,13 +19,13 @@ def generate_statistics(video_id):
     all_keys = {'BATON':'baton', 'CHEMICALSMOKE':'chemicalSmoke', 'NONUNIFORMED':'nonUniformed',
                 'UNIFORMED':'uniformed', 'RIOTSHIELD':'riotShield', 'PEPPERSPRAY':'pepperSpray', 'GUN': 'gun', 
                 'RESTRAINING': 'restraining', 'BRAWLING':'brawling', 'CROWD':'crowd', 'PERSONONGROUND':'personOnGround',
-                'RUNNING': 'running', 'SPRAY':'spray', 'STRIKING':'striking', 'THROWING':'throwing'}
+                'RUNNING': 'running', 'SPRAY':'spraying', 'STRIKING':'striking', 'THROWING':'throwing'}
 
     res = {all_keys[k]: v for k,v in res.items()}
 
     #calculate violent actions
 
-    violent_actions = ['striking', 'brawling', 'restraining']
+    violent_actions = ['striking', 'brawling', 'restraining', 'throwing']
     sum = 0
     for va in violent_actions:
         for key, value in res.items():

@@ -21,23 +21,24 @@ def perform_video_ar(video_id, folder):
             results = result_queue#.popleft()
             timestamp = int((ind/round(fps, 1))) 
 
-            if timestamp < 11:
+            if timestamp < 6:
                 timestamp = 1
             else:
-                timestamp -= 10
+                timestamp -= 5
 
             det_per_second[timestamp] = {}
 
             for result in results[0]:
-
                 selected_label, score = result
-                if selected_label == "striking" and score >= 4.0:
-                    pass
+                if selected_label == "striking" and score <= 4.0:
+                    continue
                 elif selected_label == "throwing" and score <= 4.4:
                     continue
                 elif selected_label == 'spray' and score <= 4.5:
                     continue
                 elif selected_label == 'aiming' and score <= 6.0:
+                    continue
+                elif selected_label == 'running' and score <= 4.5:
                     continue
                 elif selected_label == 'person_on_ground' and score <= 4.0:
                     continue
@@ -52,7 +53,6 @@ def perform_video_ar(video_id, folder):
                 if score < thr:
                     continue
                 
-                #TODO: TEST MODEL PRED SCORE THRESHOLDS?
                 score = str(round(score, 2))
                 det_per_second[timestamp][selected_label] = 1
 
@@ -167,8 +167,8 @@ def perform_video_ar(video_id, folder):
     label= glob.glob('src/model_artifacts/ar/*.txt')[0]
     input_step=1
     device='cuda:0'
-    threshold=4.0
-    stride=0.9
+    threshold=0.01
+    stride=1
     cfg_options={}
 
     EXCLUED_STEPS = [

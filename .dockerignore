@@ -1,5 +1,4 @@
 src/model_artifacts/archive
-__pycache__
 *.md
 *.json
 *.jpg

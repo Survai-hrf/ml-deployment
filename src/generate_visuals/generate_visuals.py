@@ -1,10 +1,18 @@
-
 import json
+from time import time
 import pandas as pd
 import datetime as dt
 import altair as alt
 
 def generate_visuals(video_id, dev_mode=False):
+
+    def sec_to_datetime(sec):
+            import datetime
+
+            convert = str(datetime.timedelta(seconds= sec))
+            return convert  
+
+
 
     def format_and_export_plotly_to_json(chart):
         export_json_name = f'temp_videodata_storage/{video_id}_chart.json'
@@ -13,9 +21,10 @@ def generate_visuals(video_id, dev_mode=False):
         with open(export_json_name) as f:
             data = json.load(f)
         
+        
         # make edits to final visual json
         # append time list to end of data list
-        data['duration'] = data['datasets'][list(data['datasets'].keys())[0]][-1]['Seconds']
+        #data['duration'] = data['datasets'][list(data['datasets'].keys())[0]][-1]['Seconds']
         
         with open(export_json_name, "w") as outfile:
             json.dump(data, outfile)
@@ -32,6 +41,9 @@ def generate_visuals(video_id, dev_mode=False):
         with open(f"temp_videodata_storage/{video_id}_combined.json") as f:
             data = json.load(f)
         
+        correct_class_order = ['SECONDS', 'UNIFORMED PERSON', 'NON-UNIFORMED PERSON', 'CROWD','PERSON ON GROUND', 'RESTRAINING', 
+                                'RUNNING', 'BRAWLING', 'SPRAY', 'STRIKING', 'THROWING', 'GUN', 'BATON', 'CHEMICAL SMOKE', 'RIOT SHIELD', 'PEPPER SPRAY']
+
         # generate variables to be added to the df
         vidlength = data['videoInfo']['videoLength']
         unique_keys = set([_key for key,val in data['seconds'].items() for _key, _val in val.items()])
@@ -52,66 +64,107 @@ def generate_visuals(video_id, dev_mode=False):
         # rename columns and clean names
         df.columns = map(str.title, df.columns)
         df.columns = df.columns.str.replace("_", " ")
-        df = df.rename(columns={"Officer": "Uniformed Person", "Civilian": "Non-Uniformed Person"})
+
+        #TODO: THIS CODE IS WEAKSAUCE
+        try:
+            df = df.rename(columns={"Non Uniformed": "Non-Uniformed Person"})
+        except:
+            pass
+        try:
+            df = df.rename(columns={"Uniformed": "Uniformed Person"})
+        except:
+            pass
 
         df2 = df * -1
         df2['Seconds'] = df['Seconds'] * 1
         df = df.append(df2)
         df.sort_index()
+        df.columns = df.columns.str.upper()
+        # reorder df to correct class order
+
+        final_list = []
+        for val in correct_class_order:
+            if val not in list(df.columns):
+                pass
+            else:
+                final_list.append(val)
+
+        #convert seconds to datetime
+        
+        #print("HERE", final_list, list(df.columns), correct_class_order)
+        df = df[final_list]
+        
+        df['SECONDS'] = df['SECONDS'].apply(sec_to_datetime)
+        df['SECONDS'] = pd.to_datetime(df['SECONDS'])
         return df
 
 
+    color_map = {'BRAWLING':'#F2191A', 'RESTRAINING':'#F2191A', 'STRIKING':'#F2191A','THROWING': '#F2191A', 'RUNNING':'#F6AA28', 'CHEMICAL SMOKE':'#30B695', 'CROWD':'#F6AA28',
+       'BATON':'#30B695', 'RIOT SHIELD':'#30B695', 'NON-UNIFORMED PERSON':'#4218D9', 'UNIFORMED PERSON':'#4218D9',
+       'PERSON ON GROUND':'#F6AA28', 'SPRAY':'#F2191A', 'GUN':'#F2191A', 'PEPPER SPRAY':'#30B695'}
+
     df = create_df_all_models()
 
-    #print csv of all detections if dev mode specified
-    if dev_mode == True:
-        df.to_csv(f'processed/detect_{video_id}.csv')
-
-
-    #generate graph
-
-    interval = alt.selection_interval(encodings=['x'])
+    # calculate bin
+    vid_length_sec = len(df) / 2
+    if vid_length_sec <= 120:
+        bin_size = vid_length_sec * 3
+    else:
+        bin_size = 240
+    
+    interval = alt.selection(type='interval', encodings=['x'])
 
     base = alt.Chart(df).properties(    
-        width=1920,
+        width='container',
         height=50,
     )
 
-    chart = base.mark_bar().encode(
-        alt.X('Seconds', bin=alt.Bin(maxbins=150, extent=interval), axis=alt.Axis(labels=False, title=None, ticks=False), scale=alt.Scale(domain=interval.ref())),
-        alt.Y(alt.repeat('row'), type='quantitative', axis=alt.Axis(titleAngle=0, titlePadding=80, labels=False, ticks=False)),
-        #color=alt.Color(
-            #alt.repeat('column'), type='ordinal',
-            #scale=alt.Scale(domain= [key for key, val in color_map.items() for col in df.columns if col == key], range=[val for key, val in color_map.items() for col in df.columns if col == key]),
-        #)
+    chart = alt.vconcat(
+        data=df,
+        spacing=0,)
 
-    ).properties(
-        width='container'
-    ).repeat(
-        row=list(df.columns)[1:],
-        spacing=0
-    )
+    for index, y_encoding in enumerate(list(df.columns[1:])):
+        orient = 'bottom'
+        ticks=False
+        labels=False
+        bar_color = color_map[y_encoding]
 
-    #chart.resolve_scale(color='independent')
+        if index == 0:
+            labels = True
+            orient = 'top'
+            ticks = True
+        if index == len(df.columns[1:]) - 1:
+            ticks=True
+            labels=True
 
-    view = base.mark_bar().encode(
-        alt.X('Seconds', title='click and drag and use mousewheel above to zoom', axis=alt.Axis()),
+        row = base.mark_bar().encode(
+            alt.X('hoursminutesseconds(SECONDS):T', scale=alt.Scale(domain=interval),axis=alt.Axis(tickCount=10,labels=labels, title=None, ticks=ticks, orient=orient),
+            ),
+            alt.Y(y_encoding, axis=alt.Axis(titleAngle=0, titlePadding=80, labels=False, ticks=False)
+            ),
+            color=alt.value(bar_color),
+            tooltip=[alt.Tooltip(y_encoding, title=f'{y_encoding.title()}'), alt.Tooltip('hoursminutesseconds(SECONDS):T', title='Timestamp')]
+            ).properties(
+                #width=1920
+            )
+        chart &= row
+
+    view = base.mark_bar(size=2).encode(
+        alt.X('hoursminutesseconds(SECONDS):T', title='Click and drag above to zoom', axis=alt.Axis(tickCount=10, orient='bottom')
+        ),
     ).add_selection(
         interval
-    ).properties(
-        height=100,
-        width=1920
     )
 
     both = alt.VConcatChart(
         vconcat=[view, chart],
-        spacing=100
+        spacing=50,
+        padding={"left": 10, "top": 20, "right": 50, "bottom": 50},
+        
     ).configure_axis(
-        gridDash=[100,1]
-        #grid=True,
+        gridDash=[1,1],
+        grid=True,
     )
 
-    #(view & chart).save('chart.json')
-    #view & chart
     return format_and_export_plotly_to_json(both)
 
