@@ -23,8 +23,11 @@ def generate_statistics(video_id):
 
     res = {all_keys[k]: v for k,v in res.items()}
 
-    #calculate violent actions
-
+    # remove unwanted detections
+    if 'pepperSpray' in res.keys():
+        del res['pepperSpray']
+    
+    # calculate violent actions
     violent_actions = ['striking', 'brawling', 'restraining', 'throwing']
     sum = 0
     for va in violent_actions:
@@ -34,7 +37,9 @@ def generate_statistics(video_id):
     res['forcefulActions'] = sum
     final = {}
     final['table'] = res
-
+    print(res)
 
     with open(f"temp_videodata_storage/{video_id}_stats.json", "w") as outfile:
         json.dump(final, outfile)
+
+generate_statistics(video_id='IMG_1509')

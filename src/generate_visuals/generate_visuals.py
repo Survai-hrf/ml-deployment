@@ -74,7 +74,7 @@ def generate_visuals(video_id, dev_mode=False):
             df = df.rename(columns={"Uniformed": "Uniformed Person"})
         except:
             pass
-
+        
         df2 = df * -1
         df2['Seconds'] = df['Seconds'] * 1
         df = df.append(df2)
@@ -82,6 +82,12 @@ def generate_visuals(video_id, dev_mode=False):
         df.columns = df.columns.str.upper()
         # reorder df to correct class order
 
+
+        #drop potential NaN's
+        df = df.dropna()
+        # convert potential floats to ints
+        df = df.astype(int)
+        
         final_list = []
         for val in correct_class_order:
             if val not in list(df.columns):
@@ -89,13 +95,16 @@ def generate_visuals(video_id, dev_mode=False):
             else:
                 final_list.append(val)
 
+
         #convert seconds to datetime
-        
-        #print("HERE", final_list, list(df.columns), correct_class_order)
         df = df[final_list]
-        
+
         df['SECONDS'] = df['SECONDS'].apply(sec_to_datetime)
         df['SECONDS'] = pd.to_datetime(df['SECONDS'])
+
+        #drop unwanted detections
+        if 'PEPPER SPRAY' in df.columns:
+            df = df.drop('PEPPER SPRAY', axis=1)
         return df
 
 

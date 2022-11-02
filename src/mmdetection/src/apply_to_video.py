@@ -134,7 +134,19 @@ def perform_video_od(video_id, gen_video, folder):
 
     capture = cv2.VideoCapture(video)
 
-    
+    height = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    width = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+    # deal with videos over 30fps which breaks the batch size
+    if capture.get(cv2.CAP_PROP_FPS) > 30:
+
+        clip = mp.VideoFileClip(video)
+        clip = clip.set_fps(30)
+        clip = clip.resize((width,height))
+        new_vid_path = video.split('.')[0] + '.mp4'
+        clip.write_videofile(new_vid_path)
+        capture = cv2.VideoCapture(new_vid_path)
+        
     
     frames = []
     #this counter is for data output
@@ -147,8 +159,11 @@ def perform_video_od(video_id, gen_video, folder):
     width = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
     fps = round(capture.get(cv2.CAP_PROP_FPS))
+
     batch_size = fps
+    print("Starting Frame by Frame Object Detection")
     while True:
         
         ret, frame = capture.read()
@@ -160,7 +175,7 @@ def perform_video_od(video_id, gen_video, folder):
         frame_count += 1
         frames.append(frame)
 
-        print('frame_count :{0}'.format(frame_count))
+        print('f:{0}'.format(frame_count), end=' ')
         
         # if need to reset gpu batch, or calculate the det per second
         if len(frames) == batch_size or frame_count % fps == 0:
@@ -186,7 +201,7 @@ def perform_video_od(video_id, gen_video, folder):
 
 
             # generate json results every 1 second
-            print(len(frames), batch_size)
+            #print(len(frames), batch_size)
 
             if len(frames) == batch_size:
 
@@ -198,7 +213,7 @@ def perform_video_od(video_id, gen_video, folder):
                         name = '{0}.jpg'.format(frame_count + i - batch_size + 1)
                         name = os.path.join(TEMP_IMAGE_STORAGE_DIR, name)
                         cv2.imwrite(name, frame)
-                        print('writing to file:{0}'.format(name))
+                        #print('writing to file:{0}'.format(name))
                 
 
 
@@ -207,7 +222,7 @@ def perform_video_od(video_id, gen_video, folder):
                 calculate_mode(fps_frame_list, current_second=frame_count/fps)
                 fps_frame_list = []
 
-            print('Predicted')
+            #print('Predicted')
             frames = []
             ### CALCULATE DETECTIONS PER FRAME #######################################################
             """
@@ -278,5 +293,5 @@ def perform_video_od(video_id, gen_video, folder):
         os.remove(os.path.join(TEMP_AUDIO_STORAGE_DIR, f))
     print("Temp audio removed 2/2")
 
-    print('\n', video, " completed ^v^", '\n')
+    print('\n', video, " OD completed ^v^", '\n')
 
