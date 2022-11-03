@@ -1,4 +1,5 @@
-import numpy as np
+from unicodedata import category
+import pandas as pd
 import cv2
 import os
 import moviepy.editor as mp
@@ -7,18 +8,16 @@ import numpy as np
 import collections
 from mmdet.apis import inference_detector, init_detector
 import json
-import urllib
 import glob
 import matplotlib
 matplotlib.use('agg')
-
 
 
 def perform_video_od(video_id, gen_video, folder):
     
     def calculate_mode(fps_frame_list, current_second):
 
-        class_list = open("src/model_artifacts/od/classes.txt","r").readlines()
+        class_list = open("model_artifacts/classes.txt","r").readlines()
 
         temp_count_storage = {}
 
@@ -80,7 +79,36 @@ def perform_video_od(video_id, gen_video, folder):
         return vid
 
 
+    def extract_frames(storage_path):
+        # provide path to video
+        # make directory to store raw frames
+        vid_path = glob.glob('test_video/*.mp4')[0]
+        os.mkdir(storage_path)
 
+        # read video frames
+        vidcap = cv2.VideoCapture(vid_path)
+        success,image = vidcap.read()
+
+        count = 0
+        while success:
+
+            # save frame as jpg file to directory
+            file_name = str(count).zfill(6)
+            cv2.imwrite(f"{storage_path}/{file_name}.jpg", image)          
+            success,image = vidcap.read()
+            print('Read a new frame: ', success)
+            count += 1
+
+
+    categories = {
+        0: 'uniformed',
+        1: 'non_uniformed',
+        2: 'riot_shield',
+        3: 'gun',
+        4: 'pepper_spray',
+        5: 'baton',
+        6: 'chemical_smoke'
+    }
     
     # if folder of videos is not specified default to:
     if folder == '':
@@ -88,25 +116,31 @@ def perform_video_od(video_id, gen_video, folder):
     else:
         video = folder
 
-    config = glob.glob("src/model_artifacts/od/*.py")[0]
-    checkpoint = glob.glob("src/model_artifacts/od/*.pth")[0]
+    config = glob.glob("model_artifacts/*.py")[0]
+    checkpoint = glob.glob("model_artifacts/*.pth")[0]
     device = 'cuda:0'
-    score_thr = 0.8
+    score_thr = 0.5
 
 
     VIDEO_DIR = 'temp_videodata_storage/'
     TEMP_IMAGE_STORAGE_DIR = 'src/mmdetection/image_temp'
     TEMP_AUDIO_STORAGE_DIR = 'src/mmdetection/audio_temp'
+    #RAW_FRAME_STORAGE_DIR = 'raw_frames/'
 
 
     os.makedirs(VIDEO_DIR, exist_ok=True)
     os.makedirs(TEMP_IMAGE_STORAGE_DIR, exist_ok=True)
     os.makedirs(TEMP_AUDIO_STORAGE_DIR, exist_ok=True)
+    #os.makedirs(RAW_FRAME_STORAGE_DIR, exist_ok=True)
+
+
+    # extract raw frames from video
+    extract_frames('raw_frames')
 
 
     #MODEL CONFIG
     # We use a RTX3090 with 24GB memory, which works on 36 images. 
-    
+    batch_size = 5
 
 
     #load model
@@ -114,6 +148,8 @@ def perform_video_od(video_id, gen_video, folder):
     #delete image_temp on first video in case of early stop
     for f in os.listdir(TEMP_IMAGE_STORAGE_DIR):
         os.remove(os.path.join(TEMP_IMAGE_STORAGE_DIR, f))
+
+
     # Pull Audio from video to apply to overlay video
 
     try:
@@ -134,36 +170,32 @@ def perform_video_od(video_id, gen_video, folder):
 
     capture = cv2.VideoCapture(video)
 
-    height = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    width = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
 
-    # deal with videos over 30fps which breaks the batch size
-    if capture.get(cv2.CAP_PROP_FPS) > 30:
-
-        clip = mp.VideoFileClip(video)
-        clip = clip.set_fps(30)
-        clip = clip.resize((width,height))
-        new_vid_path = video.split('.')[0] + '.mp4'
-        clip.write_videofile(new_vid_path)
-        capture = cv2.VideoCapture(new_vid_path)
-        
-    
     frames = []
+    
     #this counter is for data output
 
     frame_count = 0
     det_per_second = {}
     fps_frame_list = []
+
+    csv_store = []
+
+    json_store = {}
+    #images_list = []
+    predictions = []
+
+
     # these 2 lines can be removed if you dont have a 1080p camera.
     height = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
     width = capture.get(cv2.CAP_PROP_FRAME_WIDTH)
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-
     fps = round(capture.get(cv2.CAP_PROP_FPS))
 
-    batch_size = fps
-    print("Starting Frame by Frame Object Detection")
+    
+
+
     while True:
         
         ret, frame = capture.read()
@@ -175,46 +207,92 @@ def perform_video_od(video_id, gen_video, folder):
         frame_count += 1
         frames.append(frame)
 
-        print('f:{0}'.format(frame_count), end=' ')
+        print('frame_count :{0}'.format(frame_count))
         
+        annotation_id = 0
         # if need to reset gpu batch, or calculate the det per second
         if len(frames) == batch_size or frame_count % fps == 0:
 
             result = inference_detector(model, frames)
 
             # calculate and store detections in fps_frame_list
+            i = 0
             for batch_frame in result:
-                score_thr=score_thr
+
+                file_name = f'{str(frame_count + i - batch_size).zfill(6)}.jpg'
+
+                score_thr=score_thr # set confidence score threshold
 
                 bbox_result, segm_result = batch_frame
                 bboxes = np.vstack(bbox_result)
+        
                 labels = [
                     np.full(bbox.shape[0], i, dtype=np.int32)
                     for i, bbox in enumerate(bbox_result)
                 ]
                 labels = np.concatenate(labels)
-
+                
                 scores = bboxes[:, -1]
-                labels = labels[scores > score_thr]
+                
+                bb = bboxes[scores > score_thr]
+                labels = labels[scores > score_thr] # keep only the labels that score above the confidence score threshold
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
+                
+                
+                # generate 'images' dictionary
+                '''images_list.append({
+                    'id': frame_count + i - batch_size,
+                    'width': width,
+                    'height': height,
+                    'file_name': file_name
+                })'''
 
+
+                for b in bb.tolist():
+
+
+                    '''predictions.append({
+                        'image_id': frame_count + i - batch_size,
+                        'category_id': labels.tolist()[annotation_id],
+                        'bbox': [int(b[0]), int(b[1]), int(b[2] - b[0]), int(b[3] - b[1])],
+                        'score': b[4]  
+                    })'''
+
+                    predictions.append([frame_count + i - batch_size, labels.tolist()[annotation_id], b[4], int(b[0]), int(b[1]), int(b[2]), int(b[3])])
+
+                    csv_store.append({
+                        'label_name': categories.get(labels.tolist()[annotation_id]),
+                        'bbox_x1': int(b[0]),
+                        'bbox_y1': int(b[1]),
+                        'bbox_x2': int(b[2]),
+                        'bbox_y2': int(b[3]),
+                        'image_name': file_name,
+                        'width': int(width),
+                        'height': int(height),
+                        'confidence': b[4]
+                    })
+
+                    annotation_id += 1
+
+                annotation_id = 0
+                i += 1
+            
 
 
             # generate json results every 1 second
-            #print(len(frames), batch_size)
-
             if len(frames) == batch_size:
-
+                
                 if gen_video == True: 
                     for i, item in enumerate(zip(frames, result)):
 
-                        frame = model.show_result(item[0], item[1], score_thr=score_thr)
+                        id = frame_count + i - batch_size
+                        file_name = f'{str(id).zfill(6)}.jpg'
 
-                        name = '{0}.jpg'.format(frame_count + i - batch_size + 1)
+                        frame = model.show_result(item[0], item[1], score_thr=score_thr)
+                        name = '{0}.jpg'.format(frame_count + i - batch_size)
                         name = os.path.join(TEMP_IMAGE_STORAGE_DIR, name)
                         cv2.imwrite(name, frame)
-                        #print('writing to file:{0}'.format(name))
-                
+                        print('writing to file:{0}'.format(name))
 
 
 
@@ -222,13 +300,15 @@ def perform_video_od(video_id, gen_video, folder):
                 calculate_mode(fps_frame_list, current_second=frame_count/fps)
                 fps_frame_list = []
 
-            #print('Predicted')
+            
+            print('Predicted')
             frames = []
             ### CALCULATE DETECTIONS PER FRAME #######################################################
-            """
+            
             i=1
             for batch_frame in result:
                 score_thr=score_thr
+                file_name = f'{frame_count - batch_size + i}.jpg'
                 bbox_result, segm_result = batch_frame
                 bboxes = np.vstack(bbox_result)
                 labels = [
@@ -236,22 +316,57 @@ def perform_video_od(video_id, gen_video, folder):
                     for i, bbox in enumerate(bbox_result)
                 ]
                 labels = np.concatenate(labels)
+
                 scores = bboxes[:, -1]
                 labels = labels[scores > score_thr]
                 custom_labels = [model.CLASSES[label] for label in labels]
                 #print(custom_labels)
                 detection_counter = dict(collections.Counter(custom_labels))
                 det_per_second[frame_count - batch_size + i] = detection_counter
+                
                 i += 1
-            """
+            
             ##############################################################################################
-            
 
-            
+
+
+    # build json in coco format
+    '''json_store['info'] = {
+        'description': video_id
+    }'''
+    
+    #json_store['images'] = images_list
+
+
+    #json_store['annotations'] = annotations_list
+
+
+    '''json_store['categories'] = [
+        {"id":0,"name":"uniformed"},
+	    {"id":1,"name":"non_uniformed"},
+	    {"id":2,"name":"riot_shield"},
+	    {"id":3,"name":"gun"},
+        {"id":4,"name":"pepper_spray"},
+        {"id":5,"name":"baton"},
+        {"id":6,"name":"chemical_smoke"}
+    ]'''
+    
+    
 
     # WRITE ALL DET IN FRAME TO DICT
     with open(f'{VIDEO_DIR}{video_id}_od.json', 'w+') as file:
         json.dump(det_per_second, file)
+
+    # Write file, bbox and label data to json
+    with open('predictions.json', 'w+') as f:
+        json.dump(predictions, f)
+
+    # write file to csv
+    df = pd.DataFrame(csv_store)
+    df.to_csv(f'{VIDEO_DIR}{video_id}_export_data.csv')
+
+
+    # WRITE FILE NAMES, BBOXES w/ LABELS TO DICT
         
     capture.release()
 
@@ -291,5 +406,4 @@ def perform_video_od(video_id, gen_video, folder):
         os.remove(os.path.join(TEMP_AUDIO_STORAGE_DIR, f))
     print("Temp audio removed 2/2")
 
-    print('\n', video, " OD completed ^v^", '\n')
-
+    print('\n', video, " completed ^v^", '\n')
