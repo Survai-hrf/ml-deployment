@@ -8,8 +8,9 @@ def generate_master(video_id):
         stats = json.load(f)
     with open(f"temp_videodata_storage/{video_id}_chart.json") as f:
         visual = json.load(f)
+        
     stats['chart'] = visual
-    #stats.update(visual)
+    stats['uniqueId'] = video_id
 
     return stats
 

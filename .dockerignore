@@ -1,0 +1,14 @@
+src/model_artifacts/archive
+*.md
+*.json
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+*.AVI
+*.ipynb
+*.wav
+*.pkl
+*.csv
+*.npy
