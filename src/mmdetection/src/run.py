@@ -77,45 +77,19 @@ def perform_video_od(video_id, gen_video, folder):
             return
         vid.release()
         return vid
+   
 
 
-    def extract_frames(storage_path):
-        # provide path to video
-        # make directory to store raw frames
-        vid_path = glob.glob('test_video/*.mp4')[0]
-        os.mkdir(storage_path)
 
-        # read video frames
-        vidcap = cv2.VideoCapture(vid_path)
-        success,image = vidcap.read()
-
-        count = 0
-        while success:
-
-            # save frame as jpg file to directory
-            file_name = str(count).zfill(6)
-            cv2.imwrite(f"{storage_path}/{file_name}.jpg", image)          
-            success,image = vidcap.read()
-            print('Read a new frame: ', success)
-            count += 1
-
-
-    categories = {
-        0: 'uniformed',
-        1: 'non_uniformed',
-        2: 'riot_shield',
-        3: 'gun',
-        4: 'pepper_spray',
-        5: 'baton',
-        6: 'chemical_smoke'
-    }
     
     # if folder of videos is not specified default to:
     if folder == '':
         video = f'temp_videodata_storage/{video_id}.mp4'
     else:
         video = folder
-
+    
+    
+    # specify config and checkpoints
     config = glob.glob("model_artifacts/*.py")[0]
     checkpoint = glob.glob("model_artifacts/*.pth")[0]
     device = 'cuda:0'
@@ -125,17 +99,15 @@ def perform_video_od(video_id, gen_video, folder):
     VIDEO_DIR = 'temp_videodata_storage/'
     TEMP_IMAGE_STORAGE_DIR = 'src/mmdetection/image_temp'
     TEMP_AUDIO_STORAGE_DIR = 'src/mmdetection/audio_temp'
-    #RAW_FRAME_STORAGE_DIR = 'raw_frames/'
+    #JSON_STORAGE_DIR = 'src/mmdetection/src/data/predictions'
 
 
     os.makedirs(VIDEO_DIR, exist_ok=True)
     os.makedirs(TEMP_IMAGE_STORAGE_DIR, exist_ok=True)
     os.makedirs(TEMP_AUDIO_STORAGE_DIR, exist_ok=True)
-    #os.makedirs(RAW_FRAME_STORAGE_DIR, exist_ok=True)
+    #os.makedirs(JSON_STORAGE_DIR, exist_ok=True)
 
 
-    # extract raw frames from video
-    extract_frames('raw_frames')
 
 
     #MODEL CONFIG
@@ -145,6 +117,8 @@ def perform_video_od(video_id, gen_video, folder):
 
     #load model
     model = init_detector(config, checkpoint, device=device)
+
+      
     #delete image_temp on first video in case of early stop
     for f in os.listdir(TEMP_IMAGE_STORAGE_DIR):
         os.remove(os.path.join(TEMP_IMAGE_STORAGE_DIR, f))
@@ -167,6 +141,7 @@ def perform_video_od(video_id, gen_video, folder):
     except Exception as e: 
         print(e)
         print("no audio!")
+    
 
     capture = cv2.VideoCapture(video)
 
@@ -179,10 +154,6 @@ def perform_video_od(video_id, gen_video, folder):
     det_per_second = {}
     fps_frame_list = []
 
-    csv_store = []
-
-    json_store = {}
-    #images_list = []
     predictions = []
 
 
@@ -221,7 +192,7 @@ def perform_video_od(video_id, gen_video, folder):
 
                 file_name = f'{str(frame_count + i - batch_size).zfill(6)}.jpg'
 
-                score_thr=score_thr # set confidence score threshold
+                score_thr=score_thr
 
                 bbox_result, segm_result = batch_frame
                 bboxes = np.vstack(bbox_result)
@@ -237,48 +208,28 @@ def perform_video_od(video_id, gen_video, folder):
                 bb = bboxes[scores > score_thr]
                 labels = labels[scores > score_thr] # keep only the labels that score above the confidence score threshold
                 fps_frame_list.append(dict(collections.Counter([model.CLASSES[label] for label in labels])))
-                
-                
-                # generate 'images' dictionary
-                '''images_list.append({
-                    'id': frame_count + i - batch_size,
-                    'width': width,
-                    'height': height,
-                    'file_name': file_name
-                })'''
 
 
                 for b in bb.tolist():
 
-
-                    '''predictions.append({
-                        'image_id': frame_count + i - batch_size,
-                        'category_id': labels.tolist()[annotation_id],
-                        'bbox': [int(b[0]), int(b[1]), int(b[2] - b[0]), int(b[3] - b[1])],
-                        'score': b[4]  
-                    })'''
-
-                    predictions.append([frame_count + i - batch_size, labels.tolist()[annotation_id], b[4], int(b[0]), int(b[1]), int(b[2]), int(b[3])])
-
-                    csv_store.append({
-                        'label_name': categories.get(labels.tolist()[annotation_id]),
-                        'bbox_x1': int(b[0]),
-                        'bbox_y1': int(b[1]),
-                        'bbox_x2': int(b[2]),
-                        'bbox_y2': int(b[3]),
-                        'image_name': file_name,
-                        'width': int(width),
-                        'height': int(height),
-                        'confidence': b[4]
-                    })
+                    predictions.append([
+                        frame_count + i - batch_size, 
+                        labels.tolist()[annotation_id], 
+                        b[4], 
+                        int(b[0]), 
+                        int(b[1]), 
+                        int(b[2]), 
+                        int(b[3])
+                    ])
 
                     annotation_id += 1
-
+                
                 annotation_id = 0
+
                 i += 1
             
 
-
+            
             # generate json results every 1 second
             if len(frames) == batch_size:
                 
@@ -293,7 +244,7 @@ def perform_video_od(video_id, gen_video, folder):
                         name = os.path.join(TEMP_IMAGE_STORAGE_DIR, name)
                         cv2.imwrite(name, frame)
                         print('writing to file:{0}'.format(name))
-
+            
 
 
             if frame_count % fps == 0:
@@ -304,7 +255,7 @@ def perform_video_od(video_id, gen_video, folder):
             print('Predicted')
             frames = []
             ### CALCULATE DETECTIONS PER FRAME #######################################################
-            
+            '''
             i=1
             for batch_frame in result:
                 score_thr=score_thr
@@ -325,45 +276,21 @@ def perform_video_od(video_id, gen_video, folder):
                 det_per_second[frame_count - batch_size + i] = detection_counter
                 
                 i += 1
-            
+            '''
             ##############################################################################################
 
 
-
-    # build json in coco format
-    '''json_store['info'] = {
-        'description': video_id
-    }'''
     
-    #json_store['images'] = images_list
-
-
-    #json_store['annotations'] = annotations_list
-
-
-    '''json_store['categories'] = [
-        {"id":0,"name":"uniformed"},
-	    {"id":1,"name":"non_uniformed"},
-	    {"id":2,"name":"riot_shield"},
-	    {"id":3,"name":"gun"},
-        {"id":4,"name":"pepper_spray"},
-        {"id":5,"name":"baton"},
-        {"id":6,"name":"chemical_smoke"}
-    ]'''
-    
-    
-
+    '''
     # WRITE ALL DET IN FRAME TO DICT
     with open(f'{VIDEO_DIR}{video_id}_od.json', 'w+') as file:
         json.dump(det_per_second, file)
+    '''
 
     # Write file, bbox and label data to json
-    with open('predictions.json', 'w+') as f:
-        json.dump(predictions, f)
-
-    # write file to csv
-    df = pd.DataFrame(csv_store)
-    df.to_csv(f'{VIDEO_DIR}{video_id}_export_data.csv')
+    with open('ground_truth/jsons/predictions.json', 'w+') as file:
+        json.dump(predictions, file)
+    
 
 
     # WRITE FILE NAMES, BBOXES w/ LABELS TO DICT
@@ -377,7 +304,7 @@ def perform_video_od(video_id, gen_video, folder):
         # Sort the images by integer index
         images = sorted(images, key=lambda x: float(os.path.split(x)[1][:-3]))
 
-        outvid = f'temp_videodata_storage/{video_id}_overlay.mp4'
+        outvid = f'ground_truth/video_overlays/{video_id}_overlay.mp4'
         make_video(outvid, images, fps=round(fps))
 
 
@@ -407,3 +334,4 @@ def perform_video_od(video_id, gen_video, folder):
     print("Temp audio removed 2/2")
 
     print('\n', video, " completed ^v^", '\n')
+
