@@ -1,6 +1,7 @@
 import torch
 from collections import Counter
 import json
+from matplotlib import pyplot as plt
 
 def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
     # box_preds shape is (N, 4), where N is the number of bboxes
@@ -59,6 +60,9 @@ def mean_average_precision(
 
     # list storing all AP for respective classes
     average_precisions = []
+
+    # dict for storing data
+    model_performance = {}
 
     # used for numerical stability later on
     epsilon = 1e-6
@@ -148,12 +152,33 @@ def mean_average_precision(
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
 
-        print('ious: ', ious)
-        print('precisions: ', precisions)
-        print('recalls: ', recalls)
+
+        # plot precision, recall curve
+        plt.plot(recalls, precisions, linewidth=2, color="red")
+        plt.xlabel("Recall", fontsize=12, fontweight='bold')
+        plt.ylabel("Precision", fontsize=12, fontweight='bold')
+        plt.title("Precision-Recall Curve", fontsize=15, fontweight="bold")
+        plt.savefig('ground_truth/model_stats/pr_curve')
+
+        model_performance['precisions'] = precisions.tolist()
+        model_performance['recalls'] = recalls.tolist()
+
+        #model_performance['average_precisions'] = average_precisions.tolist()
+        model_performance['map'] = float(sum(average_precisions) / len(average_precisions))
+
+        with open('ground_truth/model_stats/model_performance.json', 'w+') as file:
+            json.dump(model_performance, file)
+        
+
+        #print('ious: ', ious)
+        #print('precisions: ', precisions)
+        #print('recalls: ', recalls)
         
 
     print(average_precisions)
-    print('mAP: ', sum(average_precisions) / len(average_precisions))
+    #print('mAP: ', sum(average_precisions) / len(average_precisions))
 
     return sum(average_precisions) / len(average_precisions)
+
+
+

@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use('agg')
 
 
-def perform_video_od(video_id, gen_video, folder):
+def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
     
     def calculate_mode(fps_frame_list, current_second):
 
@@ -83,15 +83,15 @@ def perform_video_od(video_id, gen_video, folder):
 
     
     # if folder of videos is not specified default to:
-    if folder == '':
+    '''if folder == '':
         video = f'temp_videodata_storage/{video_id}.mp4'
-    else:
-        video = folder
+    else:'''
+    video = folder
     
     
     # specify config and checkpoints
-    config = glob.glob("model_artifacts/*.py")[0]
-    checkpoint = glob.glob("model_artifacts/*.pth")[0]
+    config = glob.glob(f"{config}/*.py")[0]
+    checkpoint = glob.glob(f"{checkpoint}/*.pth")[0]
     device = 'cuda:0'
     score_thr = 0.5
 
@@ -99,13 +99,11 @@ def perform_video_od(video_id, gen_video, folder):
     VIDEO_DIR = 'temp_videodata_storage/'
     TEMP_IMAGE_STORAGE_DIR = 'src/mmdetection/image_temp'
     TEMP_AUDIO_STORAGE_DIR = 'src/mmdetection/audio_temp'
-    #JSON_STORAGE_DIR = 'src/mmdetection/src/data/predictions'
 
 
     os.makedirs(VIDEO_DIR, exist_ok=True)
     os.makedirs(TEMP_IMAGE_STORAGE_DIR, exist_ok=True)
     os.makedirs(TEMP_AUDIO_STORAGE_DIR, exist_ok=True)
-    #os.makedirs(JSON_STORAGE_DIR, exist_ok=True)
 
 
 
@@ -236,9 +234,6 @@ def perform_video_od(video_id, gen_video, folder):
                 if gen_video == True: 
                     for i, item in enumerate(zip(frames, result)):
 
-                        id = frame_count + i - batch_size
-                        file_name = f'{str(id).zfill(6)}.jpg'
-
                         frame = model.show_result(item[0], item[1], score_thr=score_thr)
                         name = '{0}.jpg'.format(frame_count + i - batch_size)
                         name = os.path.join(TEMP_IMAGE_STORAGE_DIR, name)
@@ -254,41 +249,10 @@ def perform_video_od(video_id, gen_video, folder):
             
             print('Predicted')
             frames = []
-            ### CALCULATE DETECTIONS PER FRAME #######################################################
-            '''
-            i=1
-            for batch_frame in result:
-                score_thr=score_thr
-                file_name = f'{frame_count - batch_size + i}.jpg'
-                bbox_result, segm_result = batch_frame
-                bboxes = np.vstack(bbox_result)
-                labels = [
-                    np.full(bbox.shape[0], i, dtype=np.int32)
-                    for i, bbox in enumerate(bbox_result)
-                ]
-                labels = np.concatenate(labels)
-
-                scores = bboxes[:, -1]
-                labels = labels[scores > score_thr]
-                custom_labels = [model.CLASSES[label] for label in labels]
-                #print(custom_labels)
-                detection_counter = dict(collections.Counter(custom_labels))
-                det_per_second[frame_count - batch_size + i] = detection_counter
-                
-                i += 1
-            '''
-            ##############################################################################################
-
-
-    
-    '''
-    # WRITE ALL DET IN FRAME TO DICT
-    with open(f'{VIDEO_DIR}{video_id}_od.json', 'w+') as file:
-        json.dump(det_per_second, file)
-    '''
+            
 
     # Write file, bbox and label data to json
-    with open('ground_truth/jsons/predictions.json', 'w+') as file:
+    with open(f'{pred}/predictions.json', 'w+') as file:
         json.dump(predictions, file)
     
 
