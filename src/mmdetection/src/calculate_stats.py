@@ -43,7 +43,7 @@ def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
 
 
 def mean_average_precision(
-    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20
+    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20, video_id='', json_store=''
 ):
     """
     Calculates mean average precision 
@@ -60,9 +60,6 @@ def mean_average_precision(
 
     # list storing all AP for respective classes
     average_precisions = []
-
-    # dict for storing data
-    model_performance = {}
 
     # used for numerical stability later on
     epsilon = 1e-6
@@ -139,7 +136,7 @@ def mean_average_precision(
                 else:
                     FP[detection_idx] = 1
 
-            # if IOU is lower then the detection is a false positive
+            # false positive if iou is lower than threshold
             else:
                 FP[detection_idx] = 1
 
@@ -152,33 +149,92 @@ def mean_average_precision(
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
 
+        #json_store['videos'] = {}
 
-        # plot precision, recall curve
-        plt.plot(recalls, precisions, linewidth=2, color="red")
-        plt.xlabel("Recall", fontsize=12, fontweight='bold')
-        plt.ylabel("Precision", fontsize=12, fontweight='bold')
-        plt.title("Precision-Recall Curve", fontsize=15, fontweight="bold")
-        plt.savefig('ground_truth/model_stats/pr_curve')
+        json_store[video_id] = {
+            'precision': precisions.tolist()[len(precisions)-1],
+            'recall': recalls.tolist()[len(recalls)-1],
+            'map': float(sum(average_precisions) / len(average_precisions))
+        }
 
-        model_performance['precisions'] = precisions.tolist()
-        model_performance['recalls'] = recalls.tolist()
-
-        #model_performance['average_precisions'] = average_precisions.tolist()
-        model_performance['map'] = float(sum(average_precisions) / len(average_precisions))
-
-        with open('ground_truth/model_stats/model_performance.json', 'w+') as file:
-            json.dump(model_performance, file)
         
 
-        #print('ious: ', ious)
-        #print('precisions: ', precisions)
-        #print('recalls: ', recalls)
+    #print('ious: ', ious)
+    print('precision: ', precisions.tolist()[len(precisions)-1])
+    print('recall: ', recalls.tolist()[len(recalls)-1])
         
 
-    print(average_precisions)
-    #print('mAP: ', sum(average_precisions) / len(average_precisions))
+    #print(average_precisions)
+    print('mAP: ', sum(average_precisions) / len(average_precisions))
 
     return sum(average_precisions) / len(average_precisions)
+
+
+
+def get_attribute_stats(attributes, video_stats, json_store):
+
+    # for each attribute, generate a list of videos that share that attribute
+    shared_attributes = {}
+
+    for k,v in attributes.items():
+        for attribute in v:
+            if attribute in shared_attributes:
+                shared_attributes[attribute].append(k)
+            else:
+                shared_attributes[attribute] = [k]
+
+
+    for attribute, videos_list in shared_attributes.items():
+
+        precision = []
+        recall = []
+        map = []
+
+        for video in videos_list:
+            data = video_stats.get(video)
+
+            for k,v in data.items():
+
+                if k == 'precision':
+                    precision.append(v)
+                if k == 'recall':
+                    recall.append(v)
+                if k == 'map':
+                    map.append(v)
+        
+
+            json_store[attribute] = {
+                'precision': sum(precision)/len(precision),
+                'recall': sum(recall)/len(recall),
+                'map': sum(map)/len(map)
+            }
+
+
+
+def get_overall_stats(video_stats, json_store):
+
+    precision = []
+    recall = []
+    map = []
+
+    for video, stats in video_stats.items():
+        data = video_stats.get(video)
+
+        for k,v in data.items():
+
+            if k == 'precision':
+                precision.append(v)
+            if k == 'recall':
+                recall.append(v)
+            if k == 'map':
+                map.append(v)
+        
+    json_store['overall'] = {
+        'precision': sum(precision)/len(precision),
+        'recall': sum(recall)/len(recall),
+        'map': sum(map)/len(map) 
+    }
+    
 
 
 

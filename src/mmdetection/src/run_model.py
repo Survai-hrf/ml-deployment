@@ -27,8 +27,6 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
             temp_count_storage[class_name] = []
 
         #get all detections per frame into list for each class
-        #print(fps_frame_list)
-
         for i in fps_frame_list:
             for key, value in i.items():
                 if key in temp_count_storage.keys():
@@ -82,12 +80,6 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
 
 
     
-    # if folder of videos is not specified default to:
-    '''if folder == '':
-        video = f'temp_videodata_storage/{video_id}.mp4'
-    else:'''
-    video = folder
-    
     
     # specify config and checkpoints
     config = glob.glob(f"{config}/*.py")[0]
@@ -105,7 +97,7 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
     os.makedirs(TEMP_IMAGE_STORAGE_DIR, exist_ok=True)
     os.makedirs(TEMP_AUDIO_STORAGE_DIR, exist_ok=True)
 
-
+    labels_list = [2, 3, 5, 6]
 
 
     #MODEL CONFIG
@@ -139,8 +131,9 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
     except Exception as e: 
         print(e)
         print("no audio!")
-    
 
+    
+    video = folder
     capture = cv2.VideoCapture(video)
 
 
@@ -209,16 +202,17 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
 
 
                 for b in bb.tolist():
+                    if labels.tolist()[annotation_id] in labels_list:
 
-                    predictions.append([
-                        frame_count + i - batch_size, 
-                        labels.tolist()[annotation_id], 
-                        b[4], 
-                        int(b[0]), 
-                        int(b[1]), 
-                        int(b[2]), 
-                        int(b[3])
-                    ])
+                        predictions.append([
+                            frame_count + i - batch_size, 
+                            labels.tolist()[annotation_id], 
+                            b[4], 
+                            int(b[0]), 
+                            int(b[1]), 
+                            int(b[2]), 
+                            int(b[3])
+                        ])
 
                     annotation_id += 1
                 
@@ -252,7 +246,7 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
             
 
     # Write file, bbox and label data to json
-    with open(f'{pred}/predictions.json', 'w+') as file:
+    with open(f'{pred}/{video_id}_predictions.json', 'w+') as file:
         json.dump(predictions, file)
     
 
