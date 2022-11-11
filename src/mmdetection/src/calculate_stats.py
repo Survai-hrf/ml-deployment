@@ -1,7 +1,9 @@
 import torch
 from collections import Counter
-import json
-from matplotlib import pyplot as plt
+
+
+
+
 
 def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
     # box_preds shape is (N, 4), where N is the number of bboxes
@@ -39,6 +41,8 @@ def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
     box2_area = abs((box2_x2 - box2_x1) * (box2_y1 - box2_y2))
 
     return intersection / (box1_area + box2_area - intersection + 1e-6)
+
+
 
 
 
@@ -149,7 +153,6 @@ def mean_average_precision(
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
 
-        #json_store['videos'] = {}
 
         json_store[video_id] = {
             'precision': precisions.tolist()[len(precisions)-1],
@@ -157,13 +160,10 @@ def mean_average_precision(
             'map': float(sum(average_precisions) / len(average_precisions))
         }
 
-        
-
     #print('ious: ', ious)
     print('precision: ', precisions.tolist()[len(precisions)-1])
     print('recall: ', recalls.tolist()[len(recalls)-1])
         
-
     #print(average_precisions)
     print('mAP: ', sum(average_precisions) / len(average_precisions))
 
@@ -171,9 +171,14 @@ def mean_average_precision(
 
 
 
-def get_attribute_stats(attributes, video_stats, json_store):
 
-    # for each attribute, generate a list of videos that share that attribute
+
+def get_attribute_stats(attributes, video_stats, json_store):
+    '''
+    calculate precision, recall, and map for each attribute
+    '''
+
+    # for each attribute, create a list of videos that share that attribute
     shared_attributes = {}
 
     for k,v in attributes.items():
@@ -183,7 +188,7 @@ def get_attribute_stats(attributes, video_stats, json_store):
             else:
                 shared_attributes[attribute] = [k]
 
-
+    # for each video that shares attribute, aggregate their statstics and average them
     for attribute, videos_list in shared_attributes.items():
 
         precision = []
@@ -202,7 +207,7 @@ def get_attribute_stats(attributes, video_stats, json_store):
                 if k == 'map':
                     map.append(v)
         
-
+            # store in dictionary to be exported later
             json_store[attribute] = {
                 'precision': sum(precision)/len(precision),
                 'recall': sum(recall)/len(recall),
@@ -211,7 +216,12 @@ def get_attribute_stats(attributes, video_stats, json_store):
 
 
 
+
+
 def get_overall_stats(video_stats, json_store):
+    '''
+    calculate the combined precision, recall, and map
+    '''
 
     precision = []
     recall = []

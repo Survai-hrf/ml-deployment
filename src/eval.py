@@ -58,7 +58,7 @@ def evaluate_model(video_id, folder='', gen_video=False, gt='', pred='', config=
 
 
     # compute map
-    mean_average_precision(pred_boxes=predictions, true_boxes=ground_truth['ground_truth'], iou_threshold=0.5, 
+    mean_average_precision(pred_boxes=predictions, true_boxes=ground_truth, iou_threshold=0.5, 
                             box_format="midpoint", num_classes=7, video_id=video_id, json_store=video_stats)
 
 
