@@ -262,7 +262,7 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
         # Sort the images by integer index
         images = sorted(images, key=lambda x: float(os.path.split(x)[1][:-3]))
 
-        outvid = f'ground_truth/video_overlays/{video_id}_overlay.mp4'
+        outvid = f'src/ground_truth/video_overlays/{video_id}_overlay.mp4'
         make_video(outvid, images, fps=round(fps))
 
 

@@ -9,12 +9,10 @@ from cv2 import VideoCapture
 import traceback
 mimetypes.init()
 
-#from mmdetection.src.map import intersection_over_union
-from mmdetection.src.calculate_stats import mean_average_precision
-from mmdetection.src.calculate_stats import get_attribute_stats
-from mmdetection.src.calculate_stats import get_overall_stats
-from mmdetection.src.run_model import perform_video_od
-
+from ground_truth.src.calculate_stats import mean_average_precision
+from ground_truth.src.calculate_stats import get_attribute_stats
+from ground_truth.src.calculate_stats import get_overall_stats
+from ground_truth.src.run_model import perform_video_od
 
 
 
@@ -26,15 +24,14 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Evaluate a models performance')
     parser.add_argument('video_id', help='unique id for saving video and video info')
-    parser.add_argument('--folder', default='ground_truth/test_videos', help='path/to/folder/of/videos')
+    parser.add_argument('--folder', default='src/ground_truth/test_videos', help='path/to/folder/of/videos')
     parser.add_argument('--gen-video', default=False, action='store_true', help='generates video overlay')
-    parser.add_argument('--gt', default='ground_truth/jsons/ground_truth', help='path/to/ground/truth/folder')
-    parser.add_argument('--pred', default='ground_truth/jsons/predictions', help='path/to/store/predictions')
+    parser.add_argument('--gt', default='src/ground_truth/jsons/ground_truth', help='path/to/ground/truth/folder')
+    parser.add_argument('--pred', default='src/ground_truth/jsons/predictions', help='path/to/store/predictions')
     parser.add_argument('--config', default='model_artifacts', help='path/to/config/folder')
     parser.add_argument('--checkpoint', default='model_artifacts', help='path/to/checkpoint/folder')
     args = parser.parse_args()
     return args
-
 
 
 
@@ -59,7 +56,7 @@ def evaluate_model(video_id, folder='', gen_video=False, gt='', pred='', config=
 
     # compute map
     mean_average_precision(pred_boxes=predictions, true_boxes=ground_truth, iou_threshold=0.5, 
-                            box_format="midpoint", num_classes=7, video_id=video_id, json_store=video_stats)
+                            box_format="midpoint", num_classes=7, video_id=video_id, json_store=video_stats, folder=folder)
 
 
 
@@ -73,14 +70,14 @@ if __name__ == '__main__':
     attribute_stats = {}
 
     # create directory to store performance data
-    storage_path = f'ground_truth/{str(datetime.date.today())}_model'
+    storage_path = f'src/ground_truth/{datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}_model'
 
     if not os.path.exists(storage_path):
         os.makedirs(storage_path)
 
 
     # read video_attributes
-    with open('ground_truth/jsons/ground_truth/video_attributes.json') as file:
+    with open('src/ground_truth/jsons/ground_truth/video_attributes.json') as file:
         attributes = json.load(file)   
 
 

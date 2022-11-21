@@ -1,6 +1,6 @@
 import torch
 from collections import Counter
-
+from moviepy.editor import VideoFileClip
 
 
 
@@ -44,10 +44,8 @@ def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
 
 
 
-
-
 def mean_average_precision(
-    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20, video_id='', json_store=''
+    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20, video_id='', json_store='', folder=''
 ):
     """
     Calculates mean average precision 
@@ -153,11 +151,15 @@ def mean_average_precision(
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
 
+        # get video duration
+        clip = VideoFileClip(folder)
+        duration = clip.duration
 
         json_store[video_id] = {
             'precision': precisions.tolist()[len(precisions)-1],
             'recall': recalls.tolist()[len(recalls)-1],
-            'map': float(sum(average_precisions) / len(average_precisions))
+            'map': float(sum(average_precisions) / len(average_precisions)),
+            'duration': duration
         }
 
     #print('ious: ', ious)
@@ -168,8 +170,6 @@ def mean_average_precision(
     print('mAP: ', sum(average_precisions) / len(average_precisions))
 
     return sum(average_precisions) / len(average_precisions)
-
-
 
 
 
@@ -213,8 +213,6 @@ def get_attribute_stats(attributes, video_stats, json_store):
                 'recall': sum(recall)/len(recall),
                 'map': sum(map)/len(map)
             }
-
-
 
 
 
