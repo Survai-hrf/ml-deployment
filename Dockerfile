@@ -65,5 +65,6 @@ ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 #aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 683846764153.dkr.ecr.us-east-2.amazonaws.com
 #docker build --file Dockerfile -t survai-ml-api .
 #docker tag survai-ml-api:latest 683846764153.dkr.ecr.us-east-2.amazonaws.com/survai-ml-api:latest
-#docker push 683846764153.dkr.ecr.us-east-2.amazonaws.com/survai-ml-api:latest
+#
+
 CMD ["python", "src/args.py"]

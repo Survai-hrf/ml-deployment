@@ -1,6 +1,7 @@
 import json
 import glob
 import re
+import pandas as pd
 
 def generate_statistics(video_id):
 
@@ -37,9 +38,50 @@ def generate_statistics(video_id):
     res['forcefulActions'] = sum
     final = {}
     final['table'] = res
-    print(res)
 
     with open(f"temp_videodata_storage/{video_id}_stats.json", "w") as outfile:
         json.dump(final, outfile)
 
-generate_statistics(video_id='IMG_1509')
+def generate_csv_and_json(video_id):
+    """This function can only run after a combined and a stats json have been generated"""
+
+    with open(f"temp_videodata_storage/{video_id}_combined.json") as f:
+        combined_data = json.load(f)
+    with open(f"temp_videodata_storage/{video_id}_stats.json") as f:
+        stats_data = json.load(f)
+    
+    #extract all classes with detections
+    all_classes = list(stats_data['table'].keys())
+    try:
+        all_classes.remove('forcefulActions')
+    except:
+        pass
+    
+    print(all_classes)
+    df = pd.DataFrame()
+
+    for cla in all_classes:
+        #go through stats chart
+        data = {f'{cla} Total': stats_data['table'][cla]}
+        df[f'{cla} Total'] = stats_data['table'][cla]
+
+        # transform names from stat chart into names inside combined
+        i = 0
+        # add spaces
+        for ind, c in enumerate(cla):
+            if c.isupper() == True:
+                cla = cla[0:ind + i] + ' ' + cla[ind+i:]
+                i +=1
+        # add capitals
+        cla = cla.title()
+
+        # g
+                
+        print(cla)
+
+
+
+
+        df[f'{cla} Timestamps'] = 0
+    print(df)
+#generate_csv_and_json('IMG_1509')
