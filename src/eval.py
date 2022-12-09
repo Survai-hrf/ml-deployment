@@ -24,7 +24,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Evaluate a models performance')
     parser.add_argument('video_id', help='unique id for saving video and video info')
-    parser.add_argument('--folder', default='src/ground_truth/test_videos', help='path/to/folder/of/videos')
+    parser.add_argument('--folder', default='src/ground_truth/videos', help='path/to/folder/of/videos')
     parser.add_argument('--gen-video', default=False, action='store_true', help='generates video overlay')
     parser.add_argument('--gt', default='src/ground_truth/jsons/ground_truth', help='path/to/ground/truth/folder')
     parser.add_argument('--pred', default='src/ground_truth/jsons/predictions', help='path/to/store/predictions')
@@ -47,11 +47,11 @@ def evaluate_model(video_id, folder='', gen_video=False, gt='', pred='', config=
 
 
     # load model predictions and ground_truths
-    with open(f'{pred}/{video_id}_predictions.json') as p:
-        predictions = json.load(p)
+    with open(f'{pred}/{video_id}_predictions.json') as file:
+        predictions = json.load(file)
 
-    with open(f'{gt}/{video_id}_ground_truth.json') as g:
-        ground_truth = json.load(g)
+    with open(f'{gt}/{video_id}.json') as file:
+        ground_truth = json.load(file)
 
 
     # compute map

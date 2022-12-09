@@ -78,7 +78,9 @@ def perform_video_od(video_id, gen_video, folder, config, checkpoint, pred):
    
 
 
-
+    if gen_video == True:
+        if not os.path.exists('src/ground_truth/video_overlays'):
+            os.mkdir('src/ground_truth/video_overlays')
     
     
     # specify config and checkpoints
