@@ -73,6 +73,8 @@ dependencies:
   - zlib=1.2.12=h166bdaf_1
   - zstd=1.5.2=h8a70e8d_1
   - pip:
+    - python-dotenv==0.21.0
+    - boto3==1.24.86
     - altair==4.2.0
     - addict==2.4.0
     - anyio==3.6.1

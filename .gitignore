@@ -9,3 +9,5 @@ model_artifacts
 *.jpg
 *.pyc
 __pycache__
+temp_videodata_storage
+processed
