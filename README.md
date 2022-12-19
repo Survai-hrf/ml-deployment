@@ -27,7 +27,7 @@ by the requirements.txt, it is okay to just pip install it, as it will be a non 
 - Ubuntu 20.04
 - CUDA 11.3
 - Conda (Up to date)
-- (optional, if training)  RTX 3080 GPU or > 
+- 8 GB VRAM GPU or > 
 
 ### Install Instructions
 
