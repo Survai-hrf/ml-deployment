@@ -1,6 +1,9 @@
 import torch
 from collections import Counter
-import json
+from moviepy.editor import VideoFileClip
+
+
+
 
 def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
     # box_preds shape is (N, 4), where N is the number of bboxes
@@ -42,7 +45,7 @@ def intersection_over_union(box_preds, box_labels, box_format='midpoint'):
 
 
 def mean_average_precision(
-    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20
+    pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20, video_id='', json_store='', folder=''
 ):
     """
     Calculates mean average precision 
@@ -135,7 +138,7 @@ def mean_average_precision(
                 else:
                     FP[detection_idx] = 1
 
-            # if IOU is lower then the detection is a false positive
+            # false positive if iou is lower than threshold
             else:
                 FP[detection_idx] = 1
 
@@ -148,12 +151,98 @@ def mean_average_precision(
         # torch.trapz for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
 
-        print('ious: ', ious)
-        print('precisions: ', precisions)
-        print('recalls: ', recalls)
-        
+        # get video duration
+        clip = VideoFileClip(folder)
+        duration = clip.duration
 
-    print(average_precisions)
+        json_store[video_id] = {
+            'precision': precisions.tolist()[len(precisions)-1],
+            'recall': recalls.tolist()[len(recalls)-1],
+            'map': float(sum(average_precisions) / len(average_precisions)),
+            'duration': duration
+        }
+
+    #print('ious: ', ious)
+    print('precision: ', precisions.tolist()[len(precisions)-1])
+    print('recall: ', recalls.tolist()[len(recalls)-1])
+        
+    #print(average_precisions)
     print('mAP: ', sum(average_precisions) / len(average_precisions))
 
     return sum(average_precisions) / len(average_precisions)
+
+
+
+def get_attribute_stats(attributes, video_stats, json_store):
+    '''
+    calculate precision, recall, and map for each attribute
+    '''
+
+    # for each attribute, create a list of videos that share that attribute
+    shared_attributes = {}
+
+    for k,v in attributes.items():
+        for attribute in v:
+            if attribute in shared_attributes:
+                shared_attributes[attribute].append(k)
+            else:
+                shared_attributes[attribute] = [k]
+
+    # for each video that shares attribute, aggregate their statstics and average them
+    for attribute, videos_list in shared_attributes.items():
+
+        precision = []
+        recall = []
+        map = []
+
+        for video in videos_list:
+            data = video_stats.get(video)
+
+            for k,v in data.items():
+
+                if k == 'precision':
+                    precision.append(v)
+                if k == 'recall':
+                    recall.append(v)
+                if k == 'map':
+                    map.append(v)
+        
+            # store in dictionary to be exported later
+            json_store[attribute] = {
+                'precision': sum(precision)/len(precision),
+                'recall': sum(recall)/len(recall),
+                'map': sum(map)/len(map)
+            }
+
+
+
+def get_overall_stats(video_stats, json_store):
+    '''
+    calculate the combined precision, recall, and map
+    '''
+
+    precision = []
+    recall = []
+    map = []
+
+    for video, stats in video_stats.items():
+        data = video_stats.get(video)
+
+        for k,v in data.items():
+
+            if k == 'precision':
+                precision.append(v)
+            if k == 'recall':
+                recall.append(v)
+            if k == 'map':
+                map.append(v)
+        
+    json_store['overall'] = {
+        'precision': sum(precision)/len(precision),
+        'recall': sum(recall)/len(recall),
+        'map': sum(map)/len(map) 
+    }
+    
+
+
+
