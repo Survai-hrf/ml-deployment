@@ -29,7 +29,6 @@ def connect_and_download(folder):
                 MessageAttributeNames=[
                     'All'
                 ],
-                VisibilityTimeout=5000,
                 WaitTimeSeconds=20
             )
             message = response['Messages'][0]
